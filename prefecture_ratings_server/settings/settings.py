@@ -67,10 +67,6 @@ TEMPLATES = [
     },
 ]
 
-TEMPLATE_DIRS = [
-
-]
-
 WSGI_APPLICATION = 'prefecture_ratings_server.wsgi.application'
 
 AUTH_PASSWORD_VALIDATORS = [
