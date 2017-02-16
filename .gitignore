@@ -1,0 +1,5 @@
+DS_Store/
+var/
+__pycache__
+.idea
+settings_local.py
