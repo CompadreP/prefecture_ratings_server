@@ -54,7 +54,7 @@ ROOT_URLCONF = 'prefecture_ratings_server.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': ['templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -65,6 +65,10 @@ TEMPLATES = [
             ],
         },
     },
+]
+
+TEMPLATE_DIRS = [
+
 ]
 
 WSGI_APPLICATION = 'prefecture_ratings_server.wsgi.application'
