@@ -20,5 +20,5 @@ admin.site.site_header = 'Администрирование'
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^ratings/', include('ratings.urls')),
+    url(r'^api/ratings', include('ratings.urls')),
 ]
