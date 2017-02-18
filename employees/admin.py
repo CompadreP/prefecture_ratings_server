@@ -9,11 +9,14 @@ from employees.models import Organization, PrefectureEmployee, RatingsUser
 
 class PrefectureEmployeeForm(forms.ModelForm):
     email = forms.EmailField(required=True)
-    is_active = forms.BooleanField(required=False)
+    is_active = forms.BooleanField(required=False,
+                                   initial=True,
+                                   label='Активный')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'instance' in kwargs:
+        self.fields['organization'].label = self.fields['organization'].queryset.model._meta.verbose_name
+        if 'instance' in kwargs and kwargs['instance']:
             instance = kwargs.get('instance')
             self.fields['email'].initial = instance.user.email
             self.fields['is_active'].initial = instance.user.is_active
@@ -21,20 +24,28 @@ class PrefectureEmployeeForm(forms.ModelForm):
     def save(self, commit=True):
         email = self.cleaned_data.get('email')
         is_active = self.cleaned_data.get('is_active')
-        if self.instance:
+        if self.instance.id:
             changed = False
-            try:
-                if self.instance.user.email != email:
-                    self.instance.user.email = email
-                    changed = True
-                if self.instance.user.is_active != is_active:
-                    self.instance.user.is_active = is_active
-                    changed = True
-                if changed:
-                    self.instance.user.save()
-            except RatingsUser.DoesNotExist:
-                self.instance.user = RatingsUser.objects.create_user(email)
-                # TODO send email with hashed url for password setup
+            if self.instance.user.email != email:
+                self.instance.user.email = email
+                changed = True
+            if self.instance.user.is_active != is_active:
+                self.instance.user.is_active = is_active
+                changed = True
+            if changed:
+                self.instance.user.save()
+        else:
+            self.instance.user = RatingsUser.objects.create_user(email)
+            # TODO send email with hashed url for password setup
+            send_mail(
+                'Регистрация на сайте prefecture-ratings.ru',
+                'Для вас был создан аккаунт на сайте prefecture-ratings.ru. '
+                'Чтобы подтвердить свой email  и установить пароль, '
+                'проследуйте по ссылке - https://',
+                'info@prefecture-ratings.ru',
+                [self.instance.user.email],
+                fail_silently=False,
+            )
         return super(PrefectureEmployeeForm, self).save(commit=commit)
 
     class Meta:
