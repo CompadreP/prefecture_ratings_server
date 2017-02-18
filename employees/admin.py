@@ -42,7 +42,7 @@ class PrefectureEmployeeForm(forms.ModelForm):
                 'Для вас был создан аккаунт на сайте prefecture-ratings.ru. '
                 'Чтобы подтвердить свой email  и установить пароль, '
                 'проследуйте по ссылке - https://',
-                'info@prefecture-ratings.ru',
+                'pref@prefecture-ratings.ru',
                 [self.instance.user.email],
                 fail_silently=False,
             )
