@@ -1,25 +1,53 @@
-# view for handling password setup for users
-# generating random hash on base of user's email
 from datetime import datetime, timedelta
-from cryptography.fernet import Fernet
 
 from django.conf import settings
 from django.http import HttpResponse
+from django.urls import reverse
+from django.views.generic import FormView
+from django.views.generic import TemplateView
+
+from employees.common import decrypt_token
+from employees.forms import PasswordSetForm
 
 
-def email_verification(request):
-    url_token = request.path[request.path.rfind('/') + 1:]
-    token = url_token.encode('utf-8')
-    f = Fernet(settings.SECRET_FERNET_KEY)
-    email, str_datetime = str(f.decrypt(token), 'utf-8').split(' | ')
-    parsed_datetime = datetime.strptime(str_datetime, "%Y-%m-%d %H:%M:%S.%f")
-    max_timedelta = timedelta(days=1)
-    if datetime.now() - parsed_datetime > max_timedelta:
-        return HttpResponse("<html><body>Время действия ссылки "
-                            "истекло, обратитесь к администратору для "
-                            "получения новой.</body></html>")
-
+def is_token_expired(parsed_datetime: datetime):
+    if datetime.now() - parsed_datetime > timedelta(seconds=settings.PASSWORD_SET_FORM_TTL_SECONDS):
+        return True
     else:
-        return HttpResponse("<html><body>А тут формочка для установки пароля</body></html>")
+        return False
 
+
+class PasswordSetView(FormView):
+    template_name = "password_set_form.html"
+    form_class = PasswordSetForm
+    success_url = '/password_set/success'
+
+    def get(self, request, *args, **kwargs):
+        url_token = request.path[request.path.rfind('/') + 1:]
+        _, parsed_datetime = decrypt_token(url_token)
+        if is_token_expired(parsed_datetime):
+            return HttpResponse("<html><body>Время действия ссылки "
+                                "истекло, обратитесь к администратору для "
+                                "получения новой.</body></html>")
+        else:
+            return super(PasswordSetView, self).get(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        self.url_token = request.path[request.path.rfind('/') + 1:]
+        email, parsed_datetime = decrypt_token(self.url_token)
+
+        if is_token_expired(parsed_datetime):
+            return HttpResponse("<html><body>Время действия ссылки "
+                                "истекло, обратитесь к администратору для "
+                                "получения новой.</body></html>")
+        else:
+            return super(PasswordSetView, self).post(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form.set_user_password(self.url_token)
+        return super(PasswordSetView, self).form_valid(form)
+
+
+class PasswordSetSuccess(TemplateView):
+    template_name = "password_set_success.html"
 

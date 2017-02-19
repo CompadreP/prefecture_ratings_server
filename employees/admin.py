@@ -14,6 +14,13 @@ from django.db import transaction
 from employees.models import Organization, PrefectureEmployee, RatingsUser
 
 
+def generate_url_token(email):
+    f = Fernet(settings.SECRET_FERNET_KEY)
+    token = f.encrypt((email + ' | '
+                       + str(datetime.now())).encode('utf-8'))
+    return parse.quote(token.decode('utf-8'))
+
+
 class PrefectureEmployeeForm(forms.ModelForm):
     email = forms.EmailField(required=True)
     is_active = forms.BooleanField(required=False,
@@ -47,6 +54,19 @@ class PrefectureEmployeeForm(forms.ModelForm):
             if self.instance.user.email != email:
                 self.instance.user.email = email
                 changed = True
+                self.instance.user.set_unusable_password()
+                url_token = generate_url_token(email)
+                with mail.get_connection() as connection:
+                    mail.EmailMessage(
+                        subject='Подтверждение данных на сайте prefecture-ratings.ru',
+                        body='Для вашего аккаунта был сменен адрес электронной'
+                             'почты. Чтобы его подтвердить, пройдите по ссылке '
+                             + settings.PREF_DOMAIN + '/password_set/' +
+                             url_token + ' и установите новый пароль. '
+                             + 'Ссылка действительна в течении 24 часов.',
+                        to=[email],
+                        connection=connection,
+                    ).send()
             if self.instance.user.is_active != is_active:
                 self.instance.user.is_active = is_active
                 changed = True
@@ -54,17 +74,16 @@ class PrefectureEmployeeForm(forms.ModelForm):
                 self.instance.user.save()
         else:
             self.instance.user = RatingsUser.objects.create_user(email)
-            # TODO send email with hashed url for password setup
-            f = Fernet(settings.SECRET_FERNET_KEY)
-            token = f.encrypt((self.instance.user.email + ' | ' + str(datetime.now())).encode('utf-8'))
-            url_token = parse.quote(token.decode('utf-8'))
+            # TODO move to celery task
+            url_token = generate_url_token(self.instance.user.email)
             with mail.get_connection() as connection:
                 mail.EmailMessage(
                     subject='Регистрация на сайте prefecture-ratings.ru',
                     body='Для вас был создан аккаунт на сайте '
                          'prefecture-ratings.ru. Чтобы подтвердить свой email '
                          'и установить пароль, проследуйте по ссылке - ' +
-                         settings.PREF_DOMAIN + '/email_verification/' + url_token,
+                         settings.PREF_DOMAIN + '/password_set/' +
+                         url_token + '. Ссылка действительна в течении 24 часов.',
                     to=[self.instance.user.email],
                     connection=connection,
                 ).send()

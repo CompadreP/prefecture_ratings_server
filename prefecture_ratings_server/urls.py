@@ -15,16 +15,17 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-
-from employees.views import email_verification
+from django.conf import settings
+from django.conf.urls.static import static
 
 admin.site.site_header = 'Администрирование'
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^email_verification/',
-        email_verification,
-        name='email_verification'),
     url(r'^api/ratings', include('ratings.urls')),
+    url(r'^password_set/', include('employees.urls')),
 ]
 
+# if settings.DEBUG:
+#     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
