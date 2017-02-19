@@ -68,14 +68,6 @@ class PrefectureEmployeeForm(forms.ModelForm):
                     to=[self.instance.user.email],
                     connection=connection,
                 ).send()
-            # send_mail(
-            #     '',
-            #
-            #     + token.decode('utf-8'),
-            #     'pref@prefecture-ratings.ru',
-            #     [self.instance.user.email],
-            #     fail_silently=False,
-            # )
         return super(PrefectureEmployeeForm, self).save(commit=commit)
 
     class Meta:
