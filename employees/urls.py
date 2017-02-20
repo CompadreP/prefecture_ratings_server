@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
 from employees.views import PasswordSetView, PasswordSetSuccess, \
-    AuthLoginView, AuthLogoutView
+    LoginView, LogoutView
 
 password_set_urlpatterns = [
     # password set
@@ -15,9 +15,9 @@ password_set_urlpatterns = [
 
 authentication_urlpatterns = [
     url(r'^login',
-        AuthLoginView.as_view(),
+        LoginView.as_view(),
         name='api_login'),
     url(r'^logout',
-        AuthLogoutView.as_view(),
+        LogoutView.as_view(),
         name='api_logout'),
 ]

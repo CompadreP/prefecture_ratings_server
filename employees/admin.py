@@ -11,7 +11,8 @@ from datetime import datetime
 
 from django.db import transaction
 
-from employees.models import Organization, PrefectureEmployee, RatingsUser
+from employees.models import Organization, PrefectureEmployee, RatingsUser, \
+    RegionEmployee
 
 
 def generate_url_token(email):
@@ -21,7 +22,7 @@ def generate_url_token(email):
     return parse.quote(token.decode('utf-8'))
 
 
-class PrefectureEmployeeForm(forms.ModelForm):
+class EmployeeForm(forms.ModelForm):
     email = forms.EmailField(required=True)
     is_active = forms.BooleanField(required=False,
                                    initial=True,
@@ -90,12 +91,40 @@ class PrefectureEmployeeForm(forms.ModelForm):
                     to=[self.instance.user.email],
                     connection=connection,
                 ).send()
-        return super(PrefectureEmployeeForm, self).save(commit=commit)
+        return super(EmployeeForm, self).save(commit=commit)
+
+
+class PrefectureEmployeeForm(EmployeeForm):
+
+    def clean_organization(self):
+        organization = self.cleaned_data['organization']
+        if not organization.district:
+            raise ValidationError(
+                'У сотрудника префектуры в качестве организации можно '
+                'указать только префектуру.'
+            )
+        return organization
 
     class Meta:
         model = PrefectureEmployee
         fields = ('email', 'first_name', 'last_name', 'patronymic',
                   'organization', 'can_approve_rating',)
+
+
+class RegionEmployeeForm(EmployeeForm):
+    def clean_organization(self):
+        organization = self.cleaned_data['organization']
+        if not organization.region:
+            raise ValidationError(
+                'У сотрудника района в качестве организации можно '
+                'указать только районную организацию.'
+            )
+        return organization
+
+    class Meta:
+        model = RegionEmployee
+        fields = ('email', 'first_name', 'last_name', 'patronymic',
+                  'organization', )
 
 
 correct_location_message = "У организации должен быть указан либо " \
@@ -128,6 +157,11 @@ class PrefectureEmployeeAdmin(admin.ModelAdmin):
     form = PrefectureEmployeeForm
 
 
+class RegionEmployeeAdmin(admin.ModelAdmin):
+    form = RegionEmployeeForm
+
+
 admin.site.unregister(Group)
 admin.site.register(PrefectureEmployee, PrefectureEmployeeAdmin)
+admin.site.register(RegionEmployee, RegionEmployeeAdmin)
 admin.site.register(Organization, OrganizationAdmin)

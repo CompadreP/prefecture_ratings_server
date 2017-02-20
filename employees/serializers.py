@@ -11,9 +11,12 @@ class RatingsUserSerializer(serializers.ModelSerializer):
 
 
 class OrganizationSerializer(serializers.ModelSerializer):
+    district = DistrictSerializer()
+    region = RegionSerializer()
+
     class Meta:
         model = Organization
-        fields = ('name', )
+        fields = ('name', 'district', 'region')
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
@@ -30,7 +33,6 @@ class PrefectureEmployeeSerializer(EmployeeSerializer):
 
 
 class RegionEmployeeSerializer(EmployeeSerializer):
-    region = RegionSerializer()
 
     class Meta:
         model = PrefectureEmployee

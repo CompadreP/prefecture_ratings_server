@@ -122,7 +122,7 @@ class RegionEmployee(Employee):
 
     class Meta:
         verbose_name = 'Сотрудник района'
-        verbose_name_plural = 'Сотрудники района'
+        verbose_name_plural = 'Сотрудники районов'
         ordering = ('last_name', )
 
 

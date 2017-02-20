@@ -1,9 +1,8 @@
-from datetime import datetime, timedelta
+import datetime
 
 from django.conf import settings
 from django.contrib.auth import login, logout
-from django.http import HttpResponse
-from django.views.decorators.csrf import ensure_csrf_cookie
+from django.template.response import TemplateResponse
 from django.views.generic import FormView
 from django.views.generic import TemplateView
 from django.contrib.auth import authenticate
@@ -16,8 +15,8 @@ from rest_framework.response import Response
 from employees.common import decrypt_token
 from employees.forms import PasswordSetForm
 from employees.models import RegionEmployee, PrefectureEmployee
-from employees.serializers import RatingsUserSerializer, \
-    PrefectureEmployeeSerializer, RegionEmployeeSerializer
+from employees.serializers import PrefectureEmployeeSerializer, \
+    RegionEmployeeSerializer
 
 
 ###############################################################################
@@ -25,16 +24,20 @@ from employees.serializers import RatingsUserSerializer, \
 ###############################################################################
 
 
-def is_verification_token_expired(parsed_datetime: datetime):
-    if datetime.now() - parsed_datetime > timedelta(seconds=settings.PASSWORD_SET_FORM_TTL_SECONDS):
+def is_verification_token_expired(parsed_datetime: datetime.datetime):
+    if (datetime.datetime.now() - parsed_datetime) \
+            > datetime.timedelta(seconds=settings.PASSWORD_SET_FORM_TTL_SECONDS):
         return True
     else:
         return False
 
 
-expired_response = HttpResponse("<html><body>Время действия ссылки "
-                                "истекло, обратитесь к администратору для "
-                                "получения новой.</body></html>")
+def expired_response(request):
+    return TemplateResponse(request, "password_set_expired.html")
+
+
+class PasswordSetSuccess(TemplateView):
+    template_name = "password_set_success.html"
 
 
 class PasswordSetView(FormView):
@@ -46,7 +49,7 @@ class PasswordSetView(FormView):
         url_token = request.path[request.path.rfind('/') + 1:]
         _, parsed_datetime = decrypt_token(url_token)
         if is_verification_token_expired(parsed_datetime):
-            return expired_response
+            return expired_response(request)
         else:
             return super(PasswordSetView, self).get(request, *args, **kwargs)
 
@@ -54,7 +57,7 @@ class PasswordSetView(FormView):
         self.url_token = request.path[request.path.rfind('/') + 1:]
         email, parsed_datetime = decrypt_token(self.url_token)
         if is_verification_token_expired(parsed_datetime):
-            return expired_response
+            return expired_response(request)
         else:
             return super(PasswordSetView, self).post(request, *args, **kwargs)
 
@@ -63,18 +66,11 @@ class PasswordSetView(FormView):
         return super(PasswordSetView, self).form_valid(form)
 
 
-class PasswordSetSuccess(TemplateView):
-    template_name = "password_set_success.html"
-
-
 ###############################################################################
 # Auth views
 ###############################################################################
 
-class AuthLoginView(APIView):
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(**kwargs)
+class LoginView(APIView):
 
     def post(self, request: Request, *args, **kwargs):
         email = request.data['email']
@@ -88,7 +84,7 @@ class AuthLoginView(APIView):
                 return_data.update({'role': 'prefecture'})
             elif RegionEmployee.objects.filter(user=user.id).exists():
                 serializer_class = RegionEmployeeSerializer
-                return_data = serializer_class(request.user.regioneemployee).data
+                return_data = serializer_class(request.user.regionemployee).data
                 return_data.update({'role': 'region'})
             else:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -97,8 +93,8 @@ class AuthLoginView(APIView):
             return Response(status=status.HTTP_403_FORBIDDEN)
 
 
-class AuthLogoutView(APIView):
+class LogoutView(APIView):
 
-    def post(self, request: Request, format=None):
+    def post(self, request: Request, *args, **kwargs):
         logout(request)
         return Response(status=status.HTTP_200_OK)
