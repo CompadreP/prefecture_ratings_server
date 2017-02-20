@@ -14,8 +14,7 @@ class Migration(migrations.Migration):
     def add_sao_regions(self, schema_editor):
         model = self.get_model("map", "Region")
         sao_district = self.get_model("map", "District").objects.get(name='САО')
-        manager = model.objects
-        manager.bulk_create([
+        model.objects.bulk_create([
             model(district=sao_district, name='Аэропорт'),
             model(district=sao_district, name='Беговой'),
             model(district=sao_district, name='Бескудниковский'),

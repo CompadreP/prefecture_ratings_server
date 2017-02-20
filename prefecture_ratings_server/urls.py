@@ -25,7 +25,7 @@ admin.site.site_header = 'Администрирование'
 
 
 @ensure_csrf_cookie
-def main_page(request):
+def main_page(request, *args, **kwargs):
     return HttpResponse()
 
 
@@ -35,6 +35,4 @@ urlpatterns = [
     url(r'^$', main_page, name='main_page'),
     url(r'^admin/', admin.site.urls),
     url(r'^password_set/', include(password_set_urlpatterns)),
-
-
 ]

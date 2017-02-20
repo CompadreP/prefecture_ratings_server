@@ -119,20 +119,14 @@ class Employee(models.Model):
 
 
 class RegionEmployee(Employee):
-    region = models.ForeignKey(Region,
-                               null=True,
-                               on_delete=models.SET_NULL,)
 
     class Meta:
         verbose_name = 'Сотрудник района'
         verbose_name_plural = 'Сотрудники района'
-        ordering = ('region', 'last_name')
+        ordering = ('last_name', )
 
 
 class PrefectureEmployee(Employee):
-    district = models.ForeignKey(District,
-                                 null=True,
-                                 on_delete=models.SET_NULL,)
     can_approve_rating = models.BooleanField(default=False,
                                              verbose_name="Может подтвержать "
                                                           "рейтинг")
@@ -140,4 +134,4 @@ class PrefectureEmployee(Employee):
     class Meta:
         verbose_name = 'Сотрудник префектуры'
         verbose_name_plural = 'Сотрудники префектуры'
-        ordering = ('district', 'last_name')
+        ordering = ('last_name', )

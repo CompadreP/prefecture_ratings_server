@@ -12,5 +12,3 @@ class RatingsViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         a = 1 / 0
         return Response(data={'success': True, 'a': a})
-
-

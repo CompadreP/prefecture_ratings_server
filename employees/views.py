@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.http import HttpResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import FormView
 from django.views.generic import TemplateView
 from django.contrib.auth import authenticate
@@ -16,7 +17,7 @@ from employees.common import decrypt_token
 from employees.forms import PasswordSetForm
 from employees.models import RegionEmployee, PrefectureEmployee
 from employees.serializers import RatingsUserSerializer, \
-    PrefectureEmployeeSerializer
+    PrefectureEmployeeSerializer, RegionEmployeeSerializer
 
 
 ###############################################################################
@@ -67,7 +68,7 @@ class PasswordSetSuccess(TemplateView):
 
 
 ###############################################################################
-# Login/logout view
+# Auth views
 ###############################################################################
 
 class AuthLoginView(APIView):
@@ -83,11 +84,15 @@ class AuthLoginView(APIView):
             login(request, user)
             if PrefectureEmployee.objects.filter(user=user.id).exists():
                 serializer_class = PrefectureEmployeeSerializer
-            # elif RegionEmployee.objects.filter(user=user.id).exists():
-            #     serializer_class = RegionEmployeeSerializer
+                return_data = serializer_class(request.user.prefectureemployee).data
+                return_data.update({'role': 'prefecture'})
+            elif RegionEmployee.objects.filter(user=user.id).exists():
+                serializer_class = RegionEmployeeSerializer
+                return_data = serializer_class(request.user.regioneemployee).data
+                return_data.update({'role': 'region'})
             else:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
-            return Response(serializer_class(request.user.prefectureemployee).data)
+            return Response(data=return_data, status=status.HTTP_200_OK)
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
 
@@ -95,6 +100,5 @@ class AuthLoginView(APIView):
 class AuthLogoutView(APIView):
 
     def post(self, request: Request, format=None):
-        pass
-
-
+        logout(request)
+        return Response(status=status.HTTP_200_OK)

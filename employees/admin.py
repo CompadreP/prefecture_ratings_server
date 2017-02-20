@@ -49,12 +49,14 @@ class PrefectureEmployeeForm(forms.ModelForm):
     def save(self, commit=True):
         email = self.cleaned_data.get('email')
         is_active = self.cleaned_data.get('is_active')
+        # If PrefectureEmployee exists
         if self.instance.id:
             changed = False
             if self.instance.user.email != email:
                 self.instance.user.email = email
                 changed = True
                 self.instance.user.set_unusable_password()
+                # TODO move to celery task
                 url_token = generate_url_token(email)
                 with mail.get_connection() as connection:
                     mail.EmailMessage(
@@ -72,6 +74,7 @@ class PrefectureEmployeeForm(forms.ModelForm):
                 changed = True
             if changed:
                 self.instance.user.save()
+        # If creating new PrefectureEmployee
         else:
             self.instance.user = RatingsUser.objects.create_user(email)
             # TODO move to celery task
