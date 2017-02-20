@@ -3,3 +3,4 @@ var/
 __pycache__
 .idea
 settings_local.py
+static_root

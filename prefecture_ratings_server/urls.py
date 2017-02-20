@@ -15,17 +15,26 @@ Including another URLconf
 """
 from django.conf.urls import url, include
 from django.contrib import admin
-from django.conf import settings
-from django.conf.urls.static import static
+from django.http import HttpResponse
+from django.views.decorators.csrf import ensure_csrf_cookie
+
+from employees.urls import password_set_urlpatterns, authentication_urlpatterns
+
 
 admin.site.site_header = 'Администрирование'
 
-urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'^api/ratings', include('ratings.urls')),
-    url(r'^password_set/', include('employees.urls')),
-]
 
-# if settings.DEBUG:
-#     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-#     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+@ensure_csrf_cookie
+def main_page(request):
+    return HttpResponse()
+
+
+urlpatterns = [
+    url(r'^api/ratings', include('ratings.urls')),
+    url(r'^api/auth/', include(authentication_urlpatterns)),
+    url(r'^$', main_page, name='main_page'),
+    url(r'^admin/', admin.site.urls),
+    url(r'^password_set/', include(password_set_urlpatterns)),
+
+
+]

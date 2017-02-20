@@ -52,10 +52,6 @@ class RatingsUser(AbstractBaseUser):
         max_length=255,
         unique=True,
     )
-    # TODO after email backend
-    # is_email_confirmed = models.BooleanField(default=False)
-    # is_active = models.BooleanField(default=False,
-    #                                 verbose_name='Активный')
     is_active = models.BooleanField(default=True,
                                     verbose_name='Активный')
     is_admin = models.BooleanField(default=False,
