@@ -18,7 +18,8 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from employees.urls import password_set_urlpatterns, authentication_urlpatterns
+from employees.urls import password_set_urlpatterns, \
+    authentication_urlpatterns, password_reset_urlpatterns
 
 
 admin.site.site_header = 'Администрирование'
@@ -35,4 +36,5 @@ urlpatterns = [
     url(r'^$', main_page, name='main_page'),
     url(r'^admin/', admin.site.urls),
     url(r'^password_set/', include(password_set_urlpatterns)),
+    url(r'^forgot_password/', include(password_reset_urlpatterns)),
 ]

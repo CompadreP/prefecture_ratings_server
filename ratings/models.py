@@ -148,16 +148,17 @@ class RatingComponent(models.Model):
                                              blank=True,
                                              db_index=True)
 
-    # TODO validation + no two same numbers in one period
-
     class Meta:
         ordering = ('number', )
         verbose_name = 'Базовый компонент рейтинга'
         verbose_name_plural = 'Базовые компоненты рейтинга'
 
     def __str__(self):
-        return self._meta.verbose_name \
-               + ' , id - {}, номер - {}'.format(self.id, self.number)
+        string = (self._meta.verbose_name
+                  + ' , id - {}, номер - {}'.format(self.id, self.number))
+        if self.base_description:
+            string += ', "{}"'.format(self.base_description[:80] + '...' if len(self.base_description) > 80 else self.base_description)
+        return string
 
     @property
     def is_active(self):
@@ -185,7 +186,6 @@ class RatingComponent(models.Model):
 
 
 class MonthlyRatingComponent(models.Model):
-    # TODO create from RatingComponent on MonthlyRating approve
     monthly_rating = models.ForeignKey(MonthlyRating,
                                        verbose_name=MonthlyRating._meta.verbose_name,
                                        on_delete=models.PROTECT,

@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.db import transaction
 from django.urls import reverse
+from django.db.models import Q
+from django.utils.safestring import mark_safe
 
 from ratings.models import RatingComponent, BaseDocument, SignerText, \
     MonthlyRating, MonthlyRatingComponent
@@ -63,12 +65,13 @@ class RatingComponentForm(forms.ModelForm):
 
         # periods intersection
         intersect_message = 'Нельзя создавать базовый компонент рейтинга' \
-                            ' с таким же номером, как и у существующего ' \
-                            'и пересекающимися сроками действия.'
+                            ' с таким же номером или наименованием, как и у ' \
+                            'существующего и пересекающимися сроками действия.'
+
         if not self.instance.id:
             if valid_to_year and valid_to_month:
                 if (RatingComponent.objects
-                        .filter(number=self.cleaned_data['number'])
+                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
                         .filter(valid_to_year__gte=valid_from_year)
@@ -76,7 +79,7 @@ class RatingComponentForm(forms.ModelForm):
                         .exists()):
                     raise ValidationError(intersect_message)
                 if (RatingComponent.objects
-                        .filter(number=self.cleaned_data['number'])
+                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
                         .filter(valid_to_year=None)
@@ -85,13 +88,13 @@ class RatingComponentForm(forms.ModelForm):
                     raise ValidationError(intersect_message)
             else:
                 if (RatingComponent.objects
-                        .filter(number=self.cleaned_data['number'])
+                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_to_year=None)
                         .filter(valid_to_month=None)
                         .exists()):
                     raise ValidationError(intersect_message)
                 elif (RatingComponent.objects
-                        .filter(number=self.cleaned_data['number'])
+                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_from_year)
                         .filter(valid_from_month__lte=valid_from_year)
                         .filter(valid_to_year__gte=valid_from_year)
@@ -102,7 +105,7 @@ class RatingComponentForm(forms.ModelForm):
             if valid_to_year and valid_to_month:
                 if (RatingComponent.objects
                         .exclude(pk=self.instance.id)
-                        .filter(number=self.cleaned_data['number'])
+                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
                         .filter(valid_to_year__gte=valid_from_year)
@@ -111,7 +114,7 @@ class RatingComponentForm(forms.ModelForm):
                     raise ValidationError(intersect_message)
                 if (RatingComponent.objects
                         .exclude(pk=self.instance.id)
-                        .filter(number=self.cleaned_data['number'])
+                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
                         .filter(valid_to_year=None)
@@ -121,14 +124,14 @@ class RatingComponentForm(forms.ModelForm):
             else:
                 if (RatingComponent.objects
                         .exclude(pk=self.instance.id)
-                        .filter(number=self.cleaned_data['number'])
+                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_to_year=None)
                         .filter(valid_to_month=None)
                         .exists()):
                     raise ValidationError(intersect_message)
                 elif (RatingComponent.objects
                         .exclude(pk=self.instance.id)
-                        .filter(number=self.cleaned_data['number'])
+                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_from_year)
                         .filter(valid_from_month__lte=valid_from_year)
                         .filter(valid_to_year__gte=valid_from_year)
@@ -155,12 +158,17 @@ class MonthlyRatingComponentInlineAdmin(admin.StackedInline):
     model = MonthlyRatingComponent
     readonly_fields = ('negotiator_comment', 'rating_component',
                        'region_comment', 'rating_component_url')
-    fields = ('rating_component', 'rating_component_url', 'responsible', 'additional_description',
+    fields = ('rating_component_url', 'responsible', 'additional_description',
               'negotiator_comment', 'region_comment')
     ordering = ('rating_component__number', )
 
     def rating_component_url(self, obj):
-        return reverse('admin:ratings_ratingcomponent_change', args=(obj.id,))
+        return mark_safe('<a href="{}">{}</a>'.format(
+            reverse('admin:ratings_ratingcomponent_change', args=[obj.id]),
+            str(obj.rating_component))
+        )
+
+    rating_component_url.short_description = RatingComponent._meta.verbose_name
 
     def has_add_permission(self, request):
         return False

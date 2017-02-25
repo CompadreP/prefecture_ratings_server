@@ -14,7 +14,7 @@ from rest_framework.response import Response
 
 from employees.common import decrypt_token
 from employees.forms import PasswordSetForm
-from employees.models import RegionEmployee, PrefectureEmployee
+from employees.models import RegionEmployee, PrefectureEmployee, RatingsUser
 from employees.serializers import PrefectureEmployeeSerializer, \
     RegionEmployeeSerializer
 
@@ -22,6 +22,7 @@ from employees.serializers import PrefectureEmployeeSerializer, \
 ###############################################################################
 # Password set views (standard django)
 ###############################################################################
+from employees.tasks import generate_token_and_send_email
 
 
 def is_verification_token_expired(parsed_datetime: datetime.datetime):
@@ -66,6 +67,18 @@ class PasswordSetView(FormView):
         return super(PasswordSetView, self).form_valid(form)
 
 
+class PasswordResetView(PasswordSetView):
+
+    def get(self, request, *args, **kwargs):
+        url_token = request.path[request.path.rfind('/') + 1:]
+        email, parsed_datetime = decrypt_token(url_token)
+        if is_verification_token_expired(parsed_datetime):
+            return expired_response(request)
+        else:
+            RatingsUser.objects.get(email=email).set_unusable_password()
+            return super(PasswordSetView, self).get(request, *args, **kwargs)
+
+
 ###############################################################################
 # Auth views
 ###############################################################################
@@ -97,4 +110,18 @@ class LogoutView(APIView):
 
     def post(self, request: Request, *args, **kwargs):
         logout(request)
+        return Response(status=status.HTTP_200_OK)
+
+
+class ResetPasswordRequestView(APIView):
+
+    # TODO throttling
+    def post(self, request: Request, *args, **kwargs):
+        email = request.data['email']
+        subject = 'Сброс пароля аккаунта на сайте prefecture-ratings.ru'
+        body = ('Кто-то (возможно не вы) запросил сброс пароля вашего аккаунта.'
+                '\n\nЕсли это были не вы, то просто проигнорируйте данное письмо.'
+                '\n\nЧтобы сбросить пароль и установить новый, перейдите по ссылке - {pref_domain}/password_set/{url_token}.'
+                '\n\nСсылка действительна в течении 24 часов.')
+        generate_token_and_send_email(email, subject, body)
         return Response(status=status.HTTP_200_OK)

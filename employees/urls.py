@@ -1,7 +1,7 @@
 from django.conf.urls import url
 
 from employees.views import PasswordSetView, PasswordSetSuccess, \
-    LoginView, LogoutView
+    LoginView, LogoutView, PasswordResetView, ResetPasswordRequestView
 
 password_set_urlpatterns = [
     # password set
@@ -13,6 +13,12 @@ password_set_urlpatterns = [
         name='password_set'),
 ]
 
+password_reset_urlpatterns = [
+    url(r'^',
+        PasswordResetView.as_view(),
+        name='password_reset'),
+]
+
 authentication_urlpatterns = [
     url(r'^login',
         LoginView.as_view(),
@@ -20,4 +26,7 @@ authentication_urlpatterns = [
     url(r'^logout',
         LogoutView.as_view(),
         name='api_logout'),
+    url(r'^reset_password',
+        ResetPasswordRequestView.as_view(),
+        name='api_reset_password_request'),
 ]
