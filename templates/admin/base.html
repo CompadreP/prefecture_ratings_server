@@ -1,0 +1,7 @@
+{% extends "admin/base.html" %}
+
+{% block extrastyle %}
+    {% if not debug %}
+        <link rel="stylesheet" href="/static/css/admin_prod.css">
+    {% endif %}
+{% endblock %}

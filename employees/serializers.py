@@ -1,25 +1,24 @@
-from rest_framework import serializers
-
+from common.serializers import DynamicFieldsModelSerializer
 from employees.models import RatingsUser, PrefectureEmployee, Organization
 from map.serializers import DistrictSerializer, RegionSerializer
 
 
-class RatingsUserSerializer(serializers.ModelSerializer):
+class RatingsUserSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = RatingsUser
         fields = ('email', 'is_active', )
 
 
-class OrganizationSerializer(serializers.ModelSerializer):
+class OrganizationSerializer(DynamicFieldsModelSerializer):
     district = DistrictSerializer()
     region = RegionSerializer()
 
     class Meta:
         model = Organization
-        fields = ('name', 'district', 'region')
+        fields = ('id', 'name', 'district', 'region')
 
 
-class EmployeeSerializer(serializers.ModelSerializer):
+class EmployeeSerializer(DynamicFieldsModelSerializer):
     user = RatingsUserSerializer()
     organization = OrganizationSerializer()
 
@@ -28,13 +27,13 @@ class PrefectureEmployeeSerializer(EmployeeSerializer):
 
     class Meta:
         model = PrefectureEmployee
-        fields = ('first_name', 'last_name',
-                  'patronymic', 'user', 'organization', 'can_approve_rating')
+        fields = ('id', 'first_name', 'last_name', 'patronymic', 'user',
+                  'organization', 'can_approve_rating')
 
 
 class RegionEmployeeSerializer(EmployeeSerializer):
 
     class Meta:
         model = PrefectureEmployee
-        fields = ('first_name', 'last_name',
-                  'patronymic', 'user', 'organization')
+        fields = ('id', 'first_name', 'last_name', 'patronymic', 'user',
+                  'organization')

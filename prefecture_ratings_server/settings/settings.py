@@ -6,6 +6,8 @@ DEBUG = False
 
 ALLOWED_HOSTS = []
 
+INTERNAL_IPS = ['127.0.0.1']
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -35,6 +37,7 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
             'employees/templates',
+            'templates'
         ],
         'APP_DIRS': True,
         'OPTIONS': {
