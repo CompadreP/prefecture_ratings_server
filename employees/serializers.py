@@ -23,7 +23,14 @@ class EmployeeSerializer(DynamicFieldsModelSerializer):
     organization = OrganizationSerializer()
 
 
-class PrefectureEmployeeSerializer(EmployeeSerializer):
+class PrefectureEmployeeSimpleSerializer(EmployeeSerializer):
+
+    class Meta:
+        model = PrefectureEmployee
+        fields = ('id', 'first_name', 'last_name', 'patronymic')
+
+
+class PrefectureEmployeeDetailSerializer(EmployeeSerializer):
 
     class Meta:
         model = PrefectureEmployee

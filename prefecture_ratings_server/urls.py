@@ -19,7 +19,8 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from employees.urls import password_set_urlpatterns, \
-    authentication_urlpatterns, password_reset_urlpatterns
+    authentication_urlpatterns, password_reset_urlpatterns, \
+    employees_urlpatterns
 
 
 admin.site.site_header = 'Администрирование'
@@ -31,7 +32,9 @@ def main_page(request, *args, **kwargs):
 
 
 urlpatterns = [
-    url(r'^api/ratings', include('ratings.urls')),
+    url(r'^api/ratings/', include('ratings.urls')),
+    url(r'^api/map/', include('map.urls')),
+    url(r'^api/employees/', include(employees_urlpatterns)),
     url(r'^api/auth/', include(authentication_urlpatterns)),
     url(r'^$', main_page, name='main_page'),
     url(r'^admin/', admin.site.urls),

@@ -1,7 +1,9 @@
 from django.conf.urls import url
+from rest_framework.routers import DefaultRouter
 
 from employees.views import PasswordSetView, PasswordSetSuccess, \
-    LoginView, LogoutView, PasswordResetView, ResetPasswordRequestView
+    LoginView, LogoutView, PasswordResetView, ResetPasswordRequestView, \
+    PrefectureEmployeesViewSet
 
 password_set_urlpatterns = [
     # password set
@@ -30,3 +32,7 @@ authentication_urlpatterns = [
         ResetPasswordRequestView.as_view(),
         name='api_reset_password_request'),
 ]
+
+router = DefaultRouter()
+router.register(r'prefecture_employees', PrefectureEmployeesViewSet)
+employees_urlpatterns = router.urls

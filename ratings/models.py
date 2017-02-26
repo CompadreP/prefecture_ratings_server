@@ -225,17 +225,20 @@ class MonthlyRatingComponent(models.Model):
     @property
     def values(self) -> List[dict]:
         regions_ids = Region.objects.values_list('id')
-        regions_dict = {region_id: [] for region_id in regions_ids}
-        for sub_component in self.related_sub_components:
+        regions_dict = {region_id[0]: [] for region_id in regions_ids}
+        for sub_component in self.related_sub_components.all():
             normalized_values = sub_component.get_normalized_values()
             for k, v in normalized_values:
                 regions_dict[k].append(v)
 
-        values_dict = {region_id: (sum(regions_dict[region_id]) /
-                                   self.related_sub_components.count())
-                       for region_id in regions_dict}
+        values_dict = {}
+        for region_id in regions_dict:
+            try:
+                values_dict[region_id] = sum(regions_dict[region_id]) / self.related_sub_components.count()
+            except ZeroDivisionError:
+                values_dict[region_id] = None
         return_list = []
-        for k, v in values_dict:
+        for k, v in values_dict.items():
             dct = {
                 "region_id": k,
                 "value": v
@@ -263,11 +266,11 @@ class MonthlyRatingSubComponent(models.Model):
                                     null=True)
     best_type = models.SmallIntegerField(choices=BEST_TYPE_CHOICES)
     document = models.FileField(upload_to='uploads/%Y/%m/%d/documents/')
-    regions = models.ManyToManyField(
-        Region,
-        through='MonthlyRatingSubComponentValue',
-        related_name='monthly_rating_sub_components'
-    )
+    # regions = models.ManyToManyField(
+    #     Region,
+    #     through='MonthlyRatingSubComponentValue',
+    #     related_name='monthly_rating_sub_components'
+    # )
 
     class Meta:
         unique_together = ('name', 'date', )
@@ -313,11 +316,14 @@ class MonthlyRatingSubComponentValue(models.Model):
     region = models.ForeignKey(Region)
     monthly_rating_sub_component = models.ForeignKey(
         MonthlyRatingSubComponent,
-        related_name='related_values',
+        related_name='values',
         on_delete=models.CASCADE
     )
     is_average = models.BooleanField(default=False)
-    value = models.DecimalField(max_digits=8, decimal_places=2)
+    value = models.DecimalField(max_digits=8,
+                                decimal_places=2,
+                                null=True,
+                                blank=True)
 
     class Meta:
         unique_together = ('region', 'monthly_rating_sub_component')

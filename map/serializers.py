@@ -6,7 +6,7 @@ from map.models import District, Region
 class DistrictSerializer(serializers.ModelSerializer):
     class Meta:
         model = District
-        fields = ('name', )
+        fields = ('id', 'name', )
 
 
 class RegionSerializer(serializers.ModelSerializer):
@@ -14,4 +14,11 @@ class RegionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Region
-        fields = ('district', 'name', )
+        fields = ('id', 'district', 'name', )
+
+
+class RegionSimpleSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Region
+        fields = ('id', 'name', 'district', )

@@ -6,18 +6,20 @@ from django.template.response import TemplateResponse
 from django.views.generic import FormView
 from django.views.generic import TemplateView
 from django.contrib.auth import authenticate
+from rest_framework import mixins
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.viewsets import GenericViewSet
 
 from employees.common import decrypt_token
 from employees.forms import PasswordSetForm
 from employees.models import RegionEmployee, PrefectureEmployee, RatingsUser
-from employees.serializers import PrefectureEmployeeSerializer, \
-    RegionEmployeeSerializer
-
+from employees.serializers import PrefectureEmployeeDetailSerializer, \
+    RegionEmployeeSerializer, PrefectureEmployeeSimpleSerializer
 
 ###############################################################################
 # Password set views (standard django)
@@ -92,7 +94,7 @@ class LoginView(APIView):
         if user is not None:
             login(request, user)
             if PrefectureEmployee.objects.filter(user=user.id).exists():
-                serializer_class = PrefectureEmployeeSerializer
+                serializer_class = PrefectureEmployeeDetailSerializer
                 return_data = serializer_class(request.user.prefectureemployee).data
                 return_data.update({'role': 'prefecture'})
             elif RegionEmployee.objects.filter(user=user.id).exists():
@@ -121,7 +123,27 @@ class ResetPasswordRequestView(APIView):
         subject = 'Сброс пароля аккаунта на сайте prefecture-ratings.ru'
         body = ('Кто-то (возможно не вы) запросил сброс пароля вашего аккаунта.'
                 '\n\nЕсли это были не вы, то просто проигнорируйте данное письмо.'
-                '\n\nЧтобы сбросить пароль и установить новый, перейдите по ссылке - {pref_domain}/password_set/{url_token}.'
+                '\n\nЧтобы сбросить пароль и установить новый, перейдите по ссылке - {base_url}/password_set/{url_token}.'
                 '\n\nСсылка действительна в течении 24 часов.')
         generate_token_and_send_email(email, subject, body)
         return Response(status=status.HTTP_200_OK)
+
+
+###############################################################################
+# Employees
+###############################################################################
+
+class PrefectureEmployeesViewSet(GenericViewSet,
+                                 mixins.ListModelMixin,
+                                 mixins.RetrieveModelMixin):
+    queryset = PrefectureEmployee.objects.filter(user__is_active=True)
+    serializer_class = PrefectureEmployeeSimpleSerializer
+    permission_classes = (AllowAny, )
+
+    def list(self, request: Request, *args, **kwargs):
+        include_approvers = request.GET.get('include_approvers')
+        queryset = self.filter_queryset(self.get_queryset())
+        if not include_approvers:
+            queryset = queryset.filter(can_approve_rating=False)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
