@@ -159,9 +159,6 @@ class MonthlyRatingSubComponentUpdateSerializer(MonthlyRatingSubComponentBaseCha
     original_value_fields.remove('region')
     values = MonthlyRatingSubComponentValueUpdateSerializer(many=True, fields=tuple(original_value_fields))
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     @transaction.atomic
     def update(self, instance, validated_data):
         values = validated_data.pop('values', None)
