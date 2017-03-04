@@ -167,6 +167,7 @@ MonthlyRatingComponent
     }
 
 Returns:
+
 .. code-block:: javascript
 
     {}
@@ -180,6 +181,7 @@ Returns:
     }
 
 Returns:
+
 .. code-block:: javascript
 
     {}
