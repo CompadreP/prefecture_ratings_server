@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from map.models import District, Region
+from apps.map.models import District, Region
 
 
 class DistrictSerializer(serializers.ModelSerializer):

@@ -2,10 +2,10 @@ from django.db import transaction
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import IntegerField
 
-from common.serializers import DynamicFieldsModelSerializer
-from employees.serializers import PrefectureEmployeeDetailSerializer
-from map.models import Region
-from ratings.models import MonthlyRating, BaseDocument, MonthlyRatingComponent, \
+from apps.common.serializers import DynamicFieldsModelSerializer
+from apps.employees.serializers import PrefectureEmployeeDetailSerializer
+from apps.map.models import Region
+from apps.ratings.models import MonthlyRating, BaseDocument, MonthlyRatingComponent, \
     RatingComponent, MonthlyRatingSubComponent, MonthlyRatingSubComponentValue
 
 

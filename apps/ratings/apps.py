@@ -2,5 +2,5 @@ from django.apps import AppConfig
 
 
 class RatingsConfig(AppConfig):
-    name = 'ratings'
+    name = 'apps.ratings'
     verbose_name = 'Рейтинги'

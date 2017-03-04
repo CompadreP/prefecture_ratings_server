@@ -4,8 +4,8 @@ from typing import List, Dict
 from decimal import Decimal
 from django.db import models
 
-from employees.models import PrefectureEmployee
-from map.models import Region
+from apps.employees.models import PrefectureEmployee
+from apps.map.models import Region
 
 YEAR_CHOICES = [(r, r) for r in
                 range(2016, datetime.date.today().year + 2)]

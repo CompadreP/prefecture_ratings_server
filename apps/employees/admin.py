@@ -5,9 +5,9 @@ from django.core.exceptions import ValidationError
 
 from django.db import transaction
 
-from employees.models import Organization, PrefectureEmployee, RatingsUser, \
+from apps.employees.models import Organization, PrefectureEmployee, RatingsUser, \
     RegionEmployee
-from employees.tasks import generate_token_and_send_email
+from apps.employees.tasks import generate_token_and_send_email
 
 
 class EmployeeForm(forms.ModelForm):

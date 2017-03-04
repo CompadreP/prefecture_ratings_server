@@ -1,6 +1,6 @@
 from rest_framework.routers import DefaultRouter
 
-from ratings.views import MonthlyRatingsViewSet, \
+from apps.ratings.views import MonthlyRatingsViewSet, \
     MonthlyRatingComponentsViewSet, MonthlyRatingSubComponentsViewSet
 
 urlpatterns = []

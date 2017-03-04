@@ -15,16 +15,16 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from employees.common import decrypt_token
-from employees.forms import PasswordSetForm
-from employees.models import RegionEmployee, PrefectureEmployee, RatingsUser
-from employees.serializers import PrefectureEmployeeDetailSerializer, \
+from apps.employees.common import decrypt_token
+from apps.employees.forms import PasswordSetForm
+from apps.employees.models import RegionEmployee, PrefectureEmployee, RatingsUser
+from apps.employees.serializers import PrefectureEmployeeDetailSerializer, \
     RegionEmployeeSerializer, PrefectureEmployeeSimpleSerializer
 
 ###############################################################################
 # Password set views (standard django)
 ###############################################################################
-from employees.tasks import generate_token_and_send_email
+from apps.employees.tasks import generate_token_and_send_email
 
 
 def is_verification_token_expired(parsed_datetime: datetime.datetime):

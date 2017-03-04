@@ -1,8 +1,8 @@
 from rest_framework import permissions
 from rest_framework.permissions import BasePermission
 
-from employees.models import PrefectureEmployee
-from ratings.models import MonthlyRatingComponent
+from apps.employees.models import PrefectureEmployee
+from apps.ratings.models import MonthlyRatingComponent
 
 
 class NegotiatorOnlyPermission(BasePermission):

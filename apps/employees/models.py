@@ -1,7 +1,7 @@
 from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
 from django.db import models
 
-from map.models import Region, District
+from apps.map.models import Region, District
 
 
 class Organization(models.Model):

@@ -2,8 +2,8 @@ from rest_framework import mixins
 from rest_framework.permissions import AllowAny
 from rest_framework.viewsets import GenericViewSet
 
-from map.models import Region
-from map.serializers import RegionSimpleSerializer
+from apps.map.models import Region
+from apps.map.serializers import RegionSimpleSerializer
 
 
 class RegionsViewSet(GenericViewSet,

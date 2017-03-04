@@ -1,6 +1,6 @@
-from common.serializers import DynamicFieldsModelSerializer
-from employees.models import RatingsUser, PrefectureEmployee, Organization
-from map.serializers import DistrictSerializer, RegionSerializer
+from apps.common.serializers import DynamicFieldsModelSerializer
+from apps.employees.models import RatingsUser, PrefectureEmployee, Organization
+from apps.map.serializers import DistrictSerializer, RegionSerializer
 
 
 class RatingsUserSerializer(DynamicFieldsModelSerializer):

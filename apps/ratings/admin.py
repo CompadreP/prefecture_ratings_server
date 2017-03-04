@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.db.models import Q
 from django.utils.safestring import mark_safe
 
-from ratings.models import RatingComponent, BaseDocument, SignerText, \
+from apps.ratings.models import RatingComponent, BaseDocument, SignerText, \
     MonthlyRating, MonthlyRatingComponent
 
 

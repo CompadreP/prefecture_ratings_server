@@ -1,7 +1,7 @@
 from django.conf.urls import url
 from rest_framework.routers import DefaultRouter
 
-from employees.views import PasswordSetView, PasswordSetSuccess, \
+from apps.employees.views import PasswordSetView, PasswordSetSuccess, \
     LoginView, LogoutView, PasswordResetView, ResetPasswordRequestView, \
     PrefectureEmployeesViewSet
 

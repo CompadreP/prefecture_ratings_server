@@ -18,7 +18,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from employees.urls import password_set_urlpatterns, \
+from apps.employees.urls import password_set_urlpatterns, \
     authentication_urlpatterns, password_reset_urlpatterns, \
     employees_urlpatterns
 
@@ -32,8 +32,8 @@ def main_page(request, *args, **kwargs):
 
 
 urlpatterns = [
-    url(r'^api/ratings/', include('ratings.urls')),
-    url(r'^api/map/', include('map.urls')),
+    url(r'^api/ratings/', include('apps.ratings.urls')),
+    url(r'^api/map/', include('apps.map.urls')),
     url(r'^api/employees/', include(employees_urlpatterns)),
     url(r'^api/auth/', include(authentication_urlpatterns)),
     url(r'^$', main_page, name='main_page'),

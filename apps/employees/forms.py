@@ -2,8 +2,8 @@ from django import forms
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 
-from employees.common import decrypt_token
-from employees.models import RatingsUser
+from apps.employees.common import decrypt_token
+from apps.employees.models import RatingsUser
 
 
 class PasswordSetForm(forms.Form):
