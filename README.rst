@@ -60,7 +60,7 @@ MonthlyRating
             "first_name": <str>,
             "last_name": <str>,
             "patronymic": <str>
-        } | null, # OPTIONAL
+        } | null, // OPTIONAL
         "components": [{
             "id": <int>,
             "rating_component": {
@@ -74,20 +74,20 @@ MonthlyRating
                 "name": <str>,
                 "base_description": <str>,
                 "weight": <int>,
-                "sub_components_display_type": <int>  # 1 - decimal, 2 - percent
+                "sub_components_display_type": <int>  // 1 - decimal, 2 - percent
             },
             "responsible": {
                 "id": <int>,
                 "first_name": <str>,
                 "last_name": <str>,
                 "patronymic": <str>
-            } | null,  # OPTIONAL
-            "additional_description": <str> | null,  # OPTIONAL
-            "negotiator_comment": <str> | null,  # OPTIONAL
-            "region_comment": <str> | null,  # OPTIONAL
+            } | null,  // OPTIONAL
+            "additional_description": <str> | null,  // OPTIONAL
+            "negotiator_comment": <str> | null,  // OPTIONAL
+            "region_comment": <str> | null,  // OPTIONAL
             "values": [{
                 "region_id": <int>,
-                "value": <decimal> | null  # OPTIONAL max_digits=8, decimal_places=2
+                "value": <decimal> | null  // OPTIONAL max_digits=8, decimal_places=2
             }],
         }]
     }
@@ -127,34 +127,34 @@ MonthlyRatingComponent
             "name": <str>,
             "base_description": <str>,
             "weight": <int>,
-            "sub_components_display_type": <int>  # 1 - decimal, 2 - percent
+            "sub_components_display_type": <int>  // 1 - decimal, 2 - percent
         },
         "responsible": {
             "id": <int>,
             "first_name": <str>,
             "last_name": <str>,
             "patronymic": <str>
-        } | null,  # OPTIONAL
-        # if include_related == 'true'
+        } | null,  // OPTIONAL
+        // if include_related == 'true'
         "related_sub_components": [{
             "id": <int>
-            "name": <str>,  # max 1000 symbols
-            "date": <str>,  # OPTIONAL YYYY-MM-DD
+            "name": <str>,  // max 1000 symbols
+            "date": <str>,  // OPTIONAL YYYY-MM-DD
             "responsible": {
                 "id": <int>,
                 "first_name": <str>,
                 "last_name": <str>,
                 "patronymic": <str>
-            },  # OPTIONAL prefecture_employee
+            },  // OPTIONAL prefecture_employee
             "values": [{
-                "region": <int>,  # region_id
+                "region": <int>,  // region_id
                 "is_average": <bool>,
-                "value": <decimal>  # max_digits=8, decimal_places=2, absent if
-                                    # is_average == true
+                "value": <decimal>  // max_digits=8, decimal_places=2, absent if
+                                    // is_average == true
             }],
-            "best_type": <int>,  # 1 - "min", 2 - "max"
-            "description": <str>,  # unlimited
-            "document": <str>  # URL to file download
+            "best_type": <int>,  // 1 - "min", 2 - "max"
+            "description": <str>,  // unlimited
+            "document": <str>  // URL to file download
         }]
     }
 
@@ -193,23 +193,23 @@ MonthlyRatingSubComponent
 
     {
         "id": <int>
-        "name": <str>,  # max 1000 symbols
-        "date": <str>,  # OPTIONAL YYYY-MM-DD
+        "name": <str>,  // max 1000 symbols
+        "date": <str>,  // OPTIONAL YYYY-MM-DD
         "responsible": {
             "id": <int>,
             "first_name": <str>,
             "last_name": <str>,
             "patronymic": <str>
-        },  # OPTIONAL prefecture_employee
+        },  // OPTIONAL prefecture_employee
         "values": [{
-            "region": <int>,  # region_id
+            "region": <int>,  // region_id
             "is_average": <bool>,
-            "value": <decimal>  # max_digits=8, decimal_places=2, absent if
-                                # is_average == true
+            "value": <decimal>  // max_digits=8, decimal_places=2, absent if
+                                // is_average == true
         }],
-        "best_type": <int>,  # 1 - "min", 2 - "max"
-        "description": <str>,  # unlimited
-        "document": <str>  # URL to file download
+        "best_type": <int>,  // 1 - "min", 2 - "max"
+        "description": <str>,  // unlimited
+        "document": <str>  // URL to file download
     }
 
 * `POST /api/ratings/monthly/sub_components/?component_id=<int>`
@@ -217,21 +217,22 @@ MonthlyRatingSubComponent
 .. code-block:: javascript
 
     {
-        "name": <str>,  # max 1000 symbols
-        "date": <str>,  # OPTIONAL YYYY-MM-DD
-        "responsible": <int>,  # OPTIONAL prefecture_employee id
+        "name": <str>,  // max 1000 symbols
+        "date": <str>,  // OPTIONAL YYYY-MM-DD
+        "responsible": <int>,  // OPTIONAL prefecture_employee id
         "values": [{
-            "region": <int>,  # region id
+            "region": <int>,  // region id
             "is_average": <bool>,
-            "value": <decimal> | null # max_digits=8, decimal_places=2, if
-                                      # is_average == true, should be null
+            "value": <decimal> | null // max_digits=8, decimal_places=2, if
+                                      // is_average == true, should be null
         }],
-        "best_type": <int>,  # 1 - "min", 2 - "max"
-        "description": <str>,  # unlimited
-        "document": <str> | null  # base64
+        "best_type": <int>,  // 1 - "min", 2 - "max"
+        "description": <str>,  // unlimited
+        "document": <str> | null  // base64
     }
 
 Returns:
+
 .. code-block:: javascript
 
     {
@@ -245,18 +246,18 @@ If user is responsible for whole component:
 .. code-block:: javascript
 
     {
-        "name": <str>,  # max 1000 symbols
-        "date": <str>,  # OPTIONAL YYYY-MM-DD
-        "responsible": <int>,  # OPTIONAL prefecture_employee id
+        "name": <str>,  // max 1000 symbols
+        "date": <str>,  // OPTIONAL YYYY-MM-DD
+        "responsible": <int>,  // OPTIONAL prefecture_employee id
         "values": [{
             "region_id": <int>,
             "is_average": <bool>,
-            "value": <decimal> | null  # max_digits=8, decimal_places=2, if
-                                       # is_average == true, should be null
+            "value": <decimal> | null  // max_digits=8, decimal_places=2, if
+                                       // is_average == true, should be null
         }],
-        "best_type": <int>,  # 1 - "min", 2 - "max"
-        "description": <str>,  # unlimited
-        "document": <str>  # base64
+        "best_type": <int>,  // 1 - "min", 2 - "max"
+        "description": <str>,  // unlimited
+        "document": <str>  // base64
     }
 
 If user is responsible for sub_component only:
@@ -264,17 +265,17 @@ If user is responsible for sub_component only:
 .. code-block:: javascript
 
     {
-        "name": <str>,  # max 1000 symbols
-        "date": <str>,  # OPTIONAL YYYY-MM-DD
+        "name": <str>,  // max 1000 symbols
+        "date": <str>,  // OPTIONAL YYYY-MM-DD
         "values": [{
             "region_id": <int>,
             "is_average": <bool>,
-            "value": <decimal> | null  # max_digits=8, decimal_places=2, if
-                                       # is_average == true, should be null
+            "value": <decimal> | null  // max_digits=8, decimal_places=2, if
+                                       // is_average == true, should be null
         }],
-        "best_type": <int>,  # 1 - "min", 2 - "max"
-        "description": <str>,  # unlimited
-        "document": <str>  # base64
+        "best_type": <int>,  // 1 - "min", 2 - "max"
+        "description": <str>,  // unlimited
+        "document": <str>  // base64
     }
 
 Returns:  # 200
