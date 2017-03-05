@@ -1,3 +1,34 @@
+Authorization
+_____________
+
+* `POST /api/auth/login`
+
+.. code-block:: javascript
+
+    {
+        "email": <str>,
+        "password": <str>
+    }
+
+Returns: # 200 OK
+
+* `POST /api/auth/logout`
+
+.. code-block:: javascript
+
+    {}
+
+Returns: # 200 OK
+
+* `POST /api/auth/reset_password`
+
+.. code-block:: javascript
+
+    {}
+
+Returns: # 200 OK
+
+
 Regions
 _______
 
@@ -104,7 +135,7 @@ Same as previous, but returns current
 MonthlyRatingComponent
 ----------------------
 
-* `GET /api/ratings/monthly/components/{id}/` `?include_related=true`
+* `GET /api/ratings/monthly/components/{id}/`  # OPTIONAL `?include_related=true`
 
 .. code-block:: javascript
 
