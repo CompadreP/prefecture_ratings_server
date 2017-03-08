@@ -1,5 +1,6 @@
 from apps.common.serializers import DynamicFieldsModelSerializer
-from apps.employees.models import RatingsUser, PrefectureEmployee, Organization
+from apps.employees.models import RatingsUser, PrefectureEmployee, Organization, \
+    RegionEmployee
 from apps.map.serializers import DistrictSerializer, RegionSerializer
 
 
@@ -11,7 +12,7 @@ class RatingsUserSerializer(DynamicFieldsModelSerializer):
 
 class OrganizationSerializer(DynamicFieldsModelSerializer):
     district = DistrictSerializer()
-    region = RegionSerializer()
+    region = RegionSerializer(fields=('id', 'name', ))
 
     class Meta:
         model = Organization
@@ -41,6 +42,6 @@ class PrefectureEmployeeDetailSerializer(EmployeeSerializer):
 class RegionEmployeeSerializer(EmployeeSerializer):
 
     class Meta:
-        model = PrefectureEmployee
+        model = RegionEmployee
         fields = ('id', 'first_name', 'last_name', 'patronymic', 'user',
                   'organization')

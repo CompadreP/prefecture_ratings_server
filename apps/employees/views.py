@@ -3,6 +3,8 @@ import datetime
 from django.conf import settings
 from django.contrib.auth import login, logout
 from django.template.response import TemplateResponse
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from django.views.generic import FormView
 from django.views.generic import TemplateView
 from django.contrib.auth import authenticate
@@ -19,7 +21,8 @@ from apps.employees.common import decrypt_token
 from apps.employees.forms import PasswordSetForm
 from apps.employees.models import RegionEmployee, PrefectureEmployee, RatingsUser
 from apps.employees.serializers import PrefectureEmployeeDetailSerializer, \
-    RegionEmployeeSerializer, PrefectureEmployeeSimpleSerializer
+    RegionEmployeeSerializer, PrefectureEmployeeSimpleSerializer, \
+    RatingsUserSerializer
 
 ###############################################################################
 # Password set views (standard django)
@@ -48,6 +51,7 @@ class PasswordSetView(FormView):
     form_class = PasswordSetForm
     success_url = '/password_set/success'
 
+    @method_decorator(ensure_csrf_cookie)
     def get(self, request, *args, **kwargs):
         url_token = request.path[request.path.rfind('/') + 1:]
         _, parsed_datetime = decrypt_token(url_token)
@@ -56,6 +60,7 @@ class PasswordSetView(FormView):
         else:
             return super(PasswordSetView, self).get(request, *args, **kwargs)
 
+    @method_decorator(csrf_protect)
     def post(self, request, *args, **kwargs):
         self.url_token = request.path[request.path.rfind('/') + 1:]
         email, parsed_datetime = decrypt_token(self.url_token)
@@ -71,6 +76,7 @@ class PasswordSetView(FormView):
 
 class PasswordResetView(PasswordSetView):
 
+    @method_decorator(ensure_csrf_cookie)
     def get(self, request, *args, **kwargs):
         url_token = request.path[request.path.rfind('/') + 1:]
         email, parsed_datetime = decrypt_token(url_token)
@@ -87,20 +93,29 @@ class PasswordResetView(PasswordSetView):
 
 class LoginView(APIView):
 
+    @method_decorator(csrf_protect)
     def post(self, request: Request, *args, **kwargs):
-        email = request.data['email']
-        password = request.data['password']
+        try:
+            email = request.data['email']
+            password = request.data['password']
+        except KeyError:
+            return Response(
+                data={'detail': 'no_user_credentials_provided'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         user = authenticate(email=email, password=password)
         if user is not None:
             login(request, user)
             if PrefectureEmployee.objects.filter(user=user.id).exists():
-                serializer_class = PrefectureEmployeeDetailSerializer
-                return_data = serializer_class(request.user.prefectureemployee).data
+                return_data = PrefectureEmployeeDetailSerializer(request.user.prefectureemployee).data
                 return_data.update({'role': 'prefecture'})
             elif RegionEmployee.objects.filter(user=user.id).exists():
-                serializer_class = RegionEmployeeSerializer
-                return_data = serializer_class(request.user.regionemployee).data
+                return_data = RegionEmployeeSerializer(request.user.regionemployee).data
                 return_data.update({'role': 'region'})
+            elif user.is_admin:
+                user_data = RatingsUserSerializer(request.user).data
+                return_data = {'user': user_data}
+                return_data.update({'role': 'admin'})
             else:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             return Response(data=return_data, status=status.HTTP_200_OK)
@@ -110,6 +125,7 @@ class LoginView(APIView):
 
 class LogoutView(APIView):
 
+    @method_decorator(ensure_csrf_cookie)
     def post(self, request: Request, *args, **kwargs):
         logout(request)
         return Response(status=status.HTTP_200_OK)
@@ -118,6 +134,7 @@ class LogoutView(APIView):
 class ResetPasswordRequestView(APIView):
 
     # TODO throttling
+    @method_decorator(csrf_protect)
     def post(self, request: Request, *args, **kwargs):
         email = request.data['email']
         subject = 'Сброс пароля аккаунта на сайте prefecture-ratings.ru'
@@ -140,6 +157,7 @@ class PrefectureEmployeesViewSet(GenericViewSet,
     serializer_class = PrefectureEmployeeSimpleSerializer
     permission_classes = (AllowAny, )
 
+    @method_decorator(ensure_csrf_cookie)
     def list(self, request: Request, *args, **kwargs):
         include_approvers = request.GET.get('include_approvers')
         queryset = self.filter_queryset(self.get_queryset())

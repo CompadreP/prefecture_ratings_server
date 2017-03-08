@@ -1,3 +1,5 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import list_route, detail_route
@@ -31,6 +33,7 @@ class MonthlyRatingsViewSet(GenericViewSet,
         return Response(serializer.data)
 
     @list_route(methods=['get'])
+    @method_decorator(ensure_csrf_cookie)
     def last_approved(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         last_approved = queryset.filter(is_approved=True).first()
@@ -41,6 +44,7 @@ class MonthlyRatingsViewSet(GenericViewSet,
             return Response(status=status.HTTP_404_NOT_FOUND)
 
     @list_route(methods=['get'])
+    @method_decorator(ensure_csrf_cookie)
     def current(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         last_approved = queryset.filter(is_approved=True).first()
@@ -64,6 +68,7 @@ class MonthlyRatingComponentsViewSet(GenericViewSet,
     queryset = MonthlyRatingComponent.objects.all()
     permission_classes = (AllowAny, )
 
+    @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         include_related = request.query_params.get('include_sub_components') == 'true'
@@ -74,6 +79,7 @@ class MonthlyRatingComponentsViewSet(GenericViewSet,
         return Response(serializer.data)
 
     @detail_route(methods=['patch'], permission_classes=[NegotiatorOnlyPermission])
+    @method_decorator(csrf_protect)
     def negotiator_comment(self, request, *args, **kwargs):
         instance = self.get_object()
         try:
@@ -84,6 +90,7 @@ class MonthlyRatingComponentsViewSet(GenericViewSet,
         return Response()
 
     @detail_route(methods=['patch'], permission_classes=[ResponsibleOnlyPermission])
+    @method_decorator(csrf_protect)
     def region_comment(self, request, *args, **kwargs):
         instance = self.get_object()
         try:
@@ -102,11 +109,13 @@ class MonthlyRatingSubComponentsViewSet(GenericViewSet,
     queryset = MonthlyRatingSubComponent.objects.all()
     permission_classes = (SubComponentPermission, )
 
+    @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = MonthlyRatingSubComponentSerializer(instance)
         return Response(serializer.data)
 
+    @method_decorator(csrf_protect)
     def create(self, request, *args, **kwargs):
         document = request.data.pop('document', None)
         # document = request.data.FILES.get('file')
@@ -128,6 +137,7 @@ class MonthlyRatingSubComponentsViewSet(GenericViewSet,
                         status=status.HTTP_201_CREATED,
                         headers=headers)
 
+    @method_decorator(csrf_protect)
     def update(self, request, *args, **kwargs):
         document = request.data.pop('document', None)
         if document:
