@@ -8,8 +8,8 @@ from django.urls import reverse
 from django.db.models import Q
 from django.utils.safestring import mark_safe
 
-from apps.ratings.models import RatingComponent, BaseDocument, SignerText, \
-    MonthlyRating, MonthlyRatingComponent
+from apps.ratings.models import RatingElement, BaseDocument, SignerText, \
+    MonthlyRating, MonthlyRatingElement
 
 
 class SignerTextForm(forms.ModelForm):
@@ -36,8 +36,8 @@ class BaseDocumentAdmin(admin.ModelAdmin):
     pass
 
 
-class RatingComponentForm(forms.ModelForm):
-    model = RatingComponent
+class RatingElementForm(forms.ModelForm):
+    model = RatingElement
 
     def clean(self):
         valid_from_year = self.cleaned_data['valid_from_year']
@@ -45,7 +45,7 @@ class RatingComponentForm(forms.ModelForm):
         valid_to_year = self.cleaned_data['valid_to_year']
         valid_to_month = self.cleaned_data['valid_to_month']
         # both fields filled
-        super(RatingComponentForm, self).clean()
+        super(RatingElementForm, self).clean()
         if ((valid_to_year and not valid_to_month)
                 or
                 (not valid_to_year and valid_to_month)):
@@ -70,7 +70,7 @@ class RatingComponentForm(forms.ModelForm):
 
         if not self.instance.id:
             if valid_to_year and valid_to_month:
-                if (RatingComponent.objects
+                if (RatingElement.objects
                         .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
@@ -78,7 +78,7 @@ class RatingComponentForm(forms.ModelForm):
                         .filter(valid_to_month__gte=valid_from_month)
                         .exists()):
                     raise ValidationError(intersect_message)
-                if (RatingComponent.objects
+                if (RatingElement.objects
                         .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
@@ -87,13 +87,13 @@ class RatingComponentForm(forms.ModelForm):
                         .exists()):
                     raise ValidationError(intersect_message)
             else:
-                if (RatingComponent.objects
+                if (RatingElement.objects
                         .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_to_year=None)
                         .filter(valid_to_month=None)
                         .exists()):
                     raise ValidationError(intersect_message)
-                elif (RatingComponent.objects
+                elif (RatingElement.objects
                         .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_from_year)
                         .filter(valid_from_month__lte=valid_from_year)
@@ -103,7 +103,7 @@ class RatingComponentForm(forms.ModelForm):
                     raise ValidationError(intersect_message)
         else:
             if valid_to_year and valid_to_month:
-                if (RatingComponent.objects
+                if (RatingElement.objects
                         .exclude(pk=self.instance.id)
                         .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_to_year)
@@ -112,7 +112,7 @@ class RatingComponentForm(forms.ModelForm):
                         .filter(valid_to_month__gte=valid_from_month)
                         .exists()):
                     raise ValidationError(intersect_message)
-                if (RatingComponent.objects
+                if (RatingElement.objects
                         .exclude(pk=self.instance.id)
                         .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_to_year)
@@ -122,14 +122,14 @@ class RatingComponentForm(forms.ModelForm):
                         .exists()):
                     raise ValidationError(intersect_message)
             else:
-                if (RatingComponent.objects
+                if (RatingElement.objects
                         .exclude(pk=self.instance.id)
                         .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_to_year=None)
                         .filter(valid_to_month=None)
                         .exists()):
                     raise ValidationError(intersect_message)
-                elif (RatingComponent.objects
+                elif (RatingElement.objects
                         .exclude(pk=self.instance.id)
                         .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
                         .filter(valid_from_year__lte=valid_from_year)
@@ -140,8 +140,8 @@ class RatingComponentForm(forms.ModelForm):
                     raise ValidationError(intersect_message)
 
 
-class RatingComponentAdmin(admin.ModelAdmin):
-    form = RatingComponentForm
+class RatingElementAdmin(admin.ModelAdmin):
+    form = RatingElementForm
     list_display = ('id', 'is_active', 'number', 'name', 'responsible',
                     'base_document', 'valid_from_month', 'valid_from_year',
                     'valid_to_month', 'valid_to_year', )
@@ -154,28 +154,28 @@ class RatingComponentAdmin(admin.ModelAdmin):
     is_active.admin_order_field = 'is_active'
 
 
-class MonthlyRatingComponentInlineAdmin(admin.StackedInline):
-    model = MonthlyRatingComponent
-    readonly_fields = ('negotiator_comment', 'rating_component',
-                       'region_comment', 'rating_component_url')
-    fields = ('rating_component_url', 'responsible', 'additional_description',
+class MonthlyRatingElementInlineAdmin(admin.StackedInline):
+    model = MonthlyRatingElement
+    readonly_fields = ('negotiator_comment', 'rating_element',
+                       'region_comment', 'rating_element_url')
+    fields = ('rating_element_url', 'responsible', 'additional_description',
               'negotiator_comment', 'region_comment')
-    ordering = ('rating_component__number', )
+    ordering = ('rating_element__number', )
 
-    def rating_component_url(self, obj):
+    def rating_element_url(self, obj):
         return mark_safe('<a href="{}">{}</a>'.format(
-            reverse('admin:ratings_ratingcomponent_change', args=[obj.id]),
-            str(obj.rating_component))
+            reverse('admin:ratings_ratingelement_change', args=[obj.id]),
+            str(obj.rating_element))
         )
 
-    rating_component_url.short_description = RatingComponent._meta.verbose_name
+    rating_element_url.short_description = RatingElement._meta.verbose_name
 
     def has_add_permission(self, request):
         return False
 
 
 class MonthlyRatingAdmin(admin.ModelAdmin):
-    inlines = [MonthlyRatingComponentInlineAdmin]
+    inlines = [MonthlyRatingElementInlineAdmin]
     readonly_fields = ('is_negotiated', 'is_approved', 'approved_by',
                        'year', 'month', )
     fieldsets = (
@@ -187,7 +187,7 @@ class MonthlyRatingAdmin(admin.ModelAdmin):
             'fields': ('base_document', 'signer_text')
         }),
     )
-    actions = ['generate_components']
+    actions = ['generate_elements']
 
     def has_add_permission(self, request):
         return False
@@ -196,30 +196,30 @@ class MonthlyRatingAdmin(admin.ModelAdmin):
         return False
 
     @transaction.atomic
-    def generate_components(self, request, queryset):
+    def generate_elements(self, request, queryset):
         if queryset.count() > 1:
             messages.error(request, "Данное действие доступно только для единичных объектов")
         else:
             rating = queryset.get()
             rating_start_date = datetime.date(year=rating.year, month=rating.month, day=1)
-            rating_components = RatingComponent.objects.all()
+            rating_elements = RatingElement.objects.all()
             created = 0
             skipped = 0
-            for rating_component in rating_components:
-                if rating_component.is_active_on_date(rating_start_date):
-                    if MonthlyRatingComponent.objects.filter(
+            for rating_element in rating_elements:
+                if rating_element.is_active_on_date(rating_start_date):
+                    if MonthlyRatingElement.objects.filter(
                             monthly_rating=rating,
-                            rating_component=rating_component).exists():
+                            rating_element=rating_element).exists():
                         skipped += 1
                         messages.warning(
                             request,
-                            "Для данного рейтинга компонент с базовым компонентом {} уже создан".format(str(rating_component))
+                            "Для данного рейтинга компонент с базовым компонентом {} уже создан".format(str(rating_element))
                         )
                     else:
-                        MonthlyRatingComponent.objects.create(
+                        MonthlyRatingElement.objects.create(
                             monthly_rating=rating,
-                            rating_component=rating_component,
-                            responsible=rating_component.responsible
+                            rating_element=rating_element,
+                            responsible=rating_element.responsible
                         )
                         created += 1
             message = "Создано - {} компонентов, пропущено - {} компонентов".format(created, skipped)
@@ -228,9 +228,9 @@ class MonthlyRatingAdmin(admin.ModelAdmin):
             else:
                 messages.error(request, message)
 
-    generate_components.short_description = "Сгенерировать компоненты для месячного рейтинга"
+    generate_elements.short_description = "Сгенерировать компоненты для месячного рейтинга"
 
 admin.site.register(SignerText, SignerTextAdmin)
-admin.site.register(RatingComponent, RatingComponentAdmin)
+admin.site.register(RatingElement, RatingElementAdmin)
 admin.site.register(BaseDocument, BaseDocumentAdmin)
 admin.site.register(MonthlyRating, MonthlyRatingAdmin)

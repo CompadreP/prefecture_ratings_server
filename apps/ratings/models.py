@@ -104,7 +104,7 @@ class MonthlyRating(models.Model):
         pass
 
 
-class RatingComponent(models.Model):
+class RatingElement(models.Model):
     DISPLAY_TYPE_CHOICES = [
         (1, 'десятичное число'),
         (2, 'процент'),
@@ -122,7 +122,7 @@ class RatingComponent(models.Model):
         verbose_name='Вес',
         choices=WEIGHT_CHOICES
     )
-    sub_components_display_type = models.SmallIntegerField(
+    sub_elements_display_type = models.SmallIntegerField(
         verbose_name='Тип отображения подкомпонентов',
         choices=DISPLAY_TYPE_CHOICES
     )
@@ -185,14 +185,14 @@ class RatingComponent(models.Model):
             return valid_from <= date
 
 
-class MonthlyRatingComponent(models.Model):
+class MonthlyRatingElement(models.Model):
     monthly_rating = models.ForeignKey(MonthlyRating,
                                        verbose_name=MonthlyRating._meta.verbose_name,
                                        on_delete=models.PROTECT,
-                                       related_name='components')
-    rating_component = models.ForeignKey(RatingComponent,
-                                         verbose_name=RatingComponent._meta.verbose_name,
-                                         on_delete=models.PROTECT,)
+                                       related_name='elements')
+    rating_element = models.ForeignKey(RatingElement,
+                                       verbose_name=RatingElement._meta.verbose_name,
+                                       on_delete=models.PROTECT, )
     responsible = models.ForeignKey(PrefectureEmployee,
                                     on_delete=models.SET_NULL,
                                     null=True,
@@ -217,7 +217,7 @@ class MonthlyRatingComponent(models.Model):
     class Meta:
         verbose_name = 'Компонент месячного рейтинга'
         verbose_name_plural = 'Компоненты месячного рейтинга'
-        unique_together = ('monthly_rating', 'rating_component')
+        unique_together = ('monthly_rating', 'rating_element')
 
     def __str__(self):
         return self._meta.verbose_name + ' , id - {}'.format(self.id)
@@ -226,15 +226,15 @@ class MonthlyRatingComponent(models.Model):
     def values(self) -> List[dict]:
         regions_ids = Region.objects.values_list('id')
         regions_dict = {region_id[0]: [] for region_id in regions_ids}
-        for sub_component in self.related_sub_components.all():
-            normalized_values = sub_component.get_normalized_values()
+        for sub_element in self.related_sub_elements.all():
+            normalized_values = sub_element.get_normalized_values()
             for k, v in normalized_values:
                 regions_dict[k].append(v)
 
         values_dict = {}
         for region_id in regions_dict:
             try:
-                values_dict[region_id] = sum(regions_dict[region_id]) / self.related_sub_components.count()
+                values_dict[region_id] = sum(regions_dict[region_id]) / self.related_sub_elements.count()
             except ZeroDivisionError:
                 values_dict[region_id] = None
         return_list = []
@@ -247,15 +247,15 @@ class MonthlyRatingComponent(models.Model):
         return return_list
 
 
-class MonthlyRatingSubComponent(models.Model):
+class MonthlyRatingSubElement(models.Model):
     BEST_TYPE_CHOICES = [
         (1, 'мин'),
         (2, 'макс'),
     ]
-    monthly_rating_component = models.ForeignKey(
-        MonthlyRatingComponent,
+    monthly_rating_element = models.ForeignKey(
+        MonthlyRatingElement,
         on_delete=models.CASCADE,
-        related_name='related_sub_components'
+        related_name='related_sub_elements'
     )
     name = models.CharField(max_length=1000)
     date = models.DateField(null=True, blank=True)
@@ -268,8 +268,8 @@ class MonthlyRatingSubComponent(models.Model):
     document = models.FileField(upload_to='uploads/%Y/%m/%d/documents/')
     # regions = models.ManyToManyField(
     #     Region,
-    #     through='MonthlyRatingSubComponentValue',
-    #     related_name='monthly_rating_sub_components'
+    #     through='MonthlyRatingSubElementValue',
+    #     related_name='monthly_rating_sub_elements'
     # )
 
     class Meta:
@@ -312,10 +312,10 @@ class MonthlyRatingSubComponent(models.Model):
         return dct
 
 
-class MonthlyRatingSubComponentValue(models.Model):
+class MonthlyRatingSubElementValue(models.Model):
     region = models.ForeignKey(Region)
-    monthly_rating_sub_component = models.ForeignKey(
-        MonthlyRatingSubComponent,
+    monthly_rating_sub_element = models.ForeignKey(
+        MonthlyRatingSubElement,
         related_name='values',
         on_delete=models.CASCADE
     )
@@ -326,7 +326,7 @@ class MonthlyRatingSubComponentValue(models.Model):
                                 blank=True)
 
     class Meta:
-        unique_together = ('region', 'monthly_rating_sub_component')
+        unique_together = ('region', 'monthly_rating_sub_element')
         verbose_name = 'Значение подкомпонента месячного рейтинга'
         verbose_name_plural = 'Значения подкомпонентов месячных рейтингов'
 

@@ -2,7 +2,16 @@ from rest_framework import permissions
 from rest_framework.permissions import BasePermission
 
 from apps.employees.models import PrefectureEmployee
-from apps.ratings.models import MonthlyRatingComponent
+from apps.ratings.models import MonthlyRatingElement
+
+
+class AdminOnlyPermission(BasePermission):
+
+    def has_permission(self, request, view):
+        if request.user.is_admin:
+            return True
+        else:
+            return False
 
 
 class NegotiatorOnlyPermission(BasePermission):
@@ -29,7 +38,7 @@ class ResponsibleOnlyPermission(BasePermission):
             return False
 
 
-class SubComponentPermission(BasePermission):
+class SubElementPermission(BasePermission):
 
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
@@ -39,7 +48,7 @@ class SubComponentPermission(BasePermission):
                 return False
             if PrefectureEmployee.objects.filter(user=request.user.id).exists():
                 if request.method == 'POST':
-                    component = MonthlyRatingComponent.objects.get(pk=request.query_params['component_id'])
+                    component = MonthlyRatingElement.objects.get(pk=request.query_params['component_id'])
                     if component.responsible == request.user.prefectureemployee:
                         return True
                     else:

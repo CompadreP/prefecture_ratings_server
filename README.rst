@@ -92,9 +92,9 @@ MonthlyRating
             "last_name": <str>,
             "patronymic": <str>
         } | null, // OPTIONAL
-        "components": [{
+        "elements": [{
             "id": <int>,
-            "rating_component": {
+            "rating_element": {
                 "id": <int>,
                 "number": <int>,
                 "base_document": {
@@ -105,7 +105,7 @@ MonthlyRating
                 "name": <str>,
                 "base_description": <str>,
                 "weight": <int>,
-                "sub_components_display_type": <int>  // 1 - decimal, 2 - percent
+                "sub_elements_display_type": <int>  // 1 - decimal, 2 - percent
             },
             "responsible": {
                 "id": <int>,
@@ -132,10 +132,10 @@ Same as previous, but returns last approved
 Same as previous, but returns current
 
 
-MonthlyRatingComponent
-----------------------
+MonthlyRatingElement
+--------------------
 
-* `GET /api/ratings/monthly/components/{id}/`  # OPTIONAL `?include_related=true`
+* `GET /api/ratings/monthly/elements/{id}/`  # OPTIONAL `?include_related=true`
 
 .. code-block:: javascript
 
@@ -147,7 +147,7 @@ MonthlyRatingComponent
             "month": <int>,
             "is_approved": <bool>
         },
-        "rating_component": {
+        "rating_element": {
             "id": <int>,
             "number": <int>,
             "base_document": {
@@ -158,7 +158,7 @@ MonthlyRatingComponent
             "name": <str>,
             "base_description": <str>,
             "weight": <int>,
-            "sub_components_display_type": <int>  // 1 - decimal, 2 - percent
+            "sub_elements_display_type": <int>  // 1 - decimal, 2 - percent
         },
         "responsible": {
             "id": <int>,
@@ -167,7 +167,7 @@ MonthlyRatingComponent
             "patronymic": <str>
         } | null,  // OPTIONAL
         // if include_related == 'true'
-        "related_sub_components": [{
+        "related_sub_elements": [{
             "id": <int>
             "name": <str>,  // max 1000 symbols
             "date": <str>,  // OPTIONAL YYYY-MM-DD
@@ -189,7 +189,7 @@ MonthlyRatingComponent
         }]
     }
 
-* `PATCH /api/ratings/monthly/components/{id}/negotiator_comment/`
+* `PATCH /api/ratings/monthly/elements/{id}/negotiator_comment/`
 
 .. code-block:: javascript
 
@@ -203,7 +203,7 @@ Returns:
 
     {}
 
-* `PATCH /api/ratings/monthly/components/{id}/region_comment/`
+* `PATCH /api/ratings/monthly/elements/{id}/region_comment/`
 
 .. code-block:: javascript
 
@@ -217,10 +217,10 @@ Returns:
 
     {}
 
-MonthlyRatingSubComponent
--------------------------
+MonthlyRatingSubElement
+-----------------------
 
-* `GET /api/ratings/monthly/sub_components/{id}/`
+* `GET /api/ratings/monthly/sub_elements/{id}/`
 
 .. code-block:: javascript
 
@@ -245,7 +245,7 @@ MonthlyRatingSubComponent
         "document": <str>  // URL to file download
     }
 
-* `POST /api/ratings/monthly/sub_components/?component_id=<int>`
+* `POST /api/ratings/monthly/sub_elements/?element_id=<int>`
 
 .. code-block:: javascript
 
@@ -272,9 +272,9 @@ Returns:
         GET body
     }
 
-* `PUT /api/ratings/monthly/sub_components/{id}/`
+* `PUT /api/ratings/monthly/sub_elements/{id}/`
 
-If user is responsible for whole component:
+If user is responsible for whole element:
 
 .. code-block:: javascript
 
@@ -293,7 +293,7 @@ If user is responsible for whole component:
         "document": <str>  // base64
     }
 
-If user is responsible for sub_component only:
+If user is responsible for sub_element only:
 
 .. code-block:: javascript
 
@@ -319,6 +319,6 @@ Returns:  # 200
         GET body
     }
 
-* `DELETE /api/ratings/monthly/sub_components/{id}/`
+* `DELETE /api/ratings/monthly/sub_elements/{id}/`
 
 Returns:  # 204

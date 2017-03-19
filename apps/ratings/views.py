@@ -8,16 +8,16 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from apps.common.permissions import NegotiatorOnlyPermission, \
-    ResponsibleOnlyPermission, SubComponentPermission
+    ResponsibleOnlyPermission, SubElementPermission, AdminOnlyPermission
 from apps.common.response_wrappers import bad_request_response
-from apps.ratings.models import MonthlyRating, MonthlyRatingComponent, \
-    MonthlyRatingSubComponent
+from apps.ratings.models import MonthlyRating, MonthlyRatingElement, \
+    MonthlyRatingSubElement
 from apps.ratings.serializers import MonthlyRatingListSerializer, \
-    MonthlyRatingDetailSerializer, MonthlyRatingComponentDetailFullSerializer, \
-    MonthlyRatingSubComponentCreateSerializer, \
-    MonthlyRatingSubComponentSerializer, \
-    MonthlyRatingComponentDetailNoSubComponentsSerializer, \
-    MonthlyRatingSubComponentUpdateSerializer
+    MonthlyRatingDetailSerializer, MonthlyRatingElementDetailFullSerializer, \
+    MonthlyRatingSubElementCreateSerializer, \
+    MonthlyRatingSubElementSerializer, \
+    MonthlyRatingElementDetailNoSubElementSerializer, \
+    MonthlyRatingSubElementUpdateSerializer
 
 
 class MonthlyRatingsViewSet(GenericViewSet,
@@ -63,20 +63,31 @@ class MonthlyRatingsViewSet(GenericViewSet,
         return Response(serializer.data)
 
 
-class MonthlyRatingComponentsViewSet(GenericViewSet,
-                                     mixins.RetrieveModelMixin):
-    queryset = MonthlyRatingComponent.objects.all()
+class MonthlyRatingElementsViewSet(GenericViewSet,
+                                   mixins.RetrieveModelMixin,):
+    queryset = MonthlyRatingElement.objects.all()
     permission_classes = (AllowAny, )
 
     @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        include_related = request.query_params.get('include_sub_components') == 'true'
+        include_related = request.query_params.get('include_sub_elements') == 'true'
         if include_related:
-            serializer = MonthlyRatingComponentDetailFullSerializer(instance)
+            serializer = MonthlyRatingElementDetailFullSerializer(instance)
         else:
-            serializer = MonthlyRatingComponentDetailNoSubComponentsSerializer(instance)
+            serializer = MonthlyRatingElementDetailNoSubElementSerializer(instance)
         return Response(serializer.data)
+
+    @detail_route(methods=['patch'], permission_classes=[AdminOnlyPermission])
+    @method_decorator(csrf_protect)
+    def additional_description(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            instance.additional_description = str(request.data['additional_description'])
+            instance.save()
+        except KeyError:
+            return bad_request_response('incorrect_fields_set')
+        return Response()
 
     @detail_route(methods=['patch'], permission_classes=[NegotiatorOnlyPermission])
     @method_decorator(csrf_protect)
@@ -101,18 +112,18 @@ class MonthlyRatingComponentsViewSet(GenericViewSet,
         return Response()
 
 
-class MonthlyRatingSubComponentsViewSet(GenericViewSet,
-                                        mixins.RetrieveModelMixin,
-                                        mixins.CreateModelMixin,
-                                        mixins.UpdateModelMixin,
-                                        mixins.DestroyModelMixin):
-    queryset = MonthlyRatingSubComponent.objects.all()
-    permission_classes = (SubComponentPermission, )
+class MonthlyRatingSubElementsViewSet(GenericViewSet,
+                                      mixins.RetrieveModelMixin,
+                                      mixins.CreateModelMixin,
+                                      mixins.UpdateModelMixin,
+                                      mixins.DestroyModelMixin):
+    queryset = MonthlyRatingSubElement.objects.all()
+    permission_classes = (SubElementPermission,)
 
     @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = MonthlyRatingSubComponentSerializer(instance)
+        serializer = MonthlyRatingSubElementSerializer(instance)
         return Response(serializer.data)
 
     @method_decorator(csrf_protect)
@@ -123,12 +134,12 @@ class MonthlyRatingSubComponentsViewSet(GenericViewSet,
             # TODO handle document
             pass
         try:
-            component_id = int(request.query_params.get('component_id'))
+            element_id = int(request.query_params.get('element_id'))
         except (KeyError, TypeError):
-            return bad_request_response(error_code='wrong_component_id')
-        serializer = MonthlyRatingSubComponentCreateSerializer(
+            return bad_request_response(error_code='wrong_element_id')
+        serializer = MonthlyRatingSubElementCreateSerializer(
             data=request.data,
-            context={'component_id': component_id}
+            context={'element_id': element_id}
         )
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -144,12 +155,12 @@ class MonthlyRatingSubComponentsViewSet(GenericViewSet,
             # TODO handle document
             pass
         instance = self.get_object()
-        if request.user.prefectureemployee == instance.monthly_rating_component.responsible:
-            serializer = MonthlyRatingSubComponentUpdateSerializer(instance, data=request.data)
+        if request.user.prefectureemployee == instance.monthly_rating_element.responsible:
+            serializer = MonthlyRatingSubElementUpdateSerializer(instance, data=request.data)
         elif request.user.prefectureemployee == instance.responsible:
-            fields = set(MonthlyRatingSubComponentUpdateSerializer.Meta.fields)
+            fields = set(MonthlyRatingSubElementUpdateSerializer.Meta.fields)
             fields.remove('responsible')
-            serializer = MonthlyRatingSubComponentUpdateSerializer(instance, data=request.data, fields=tuple(fields))
+            serializer = MonthlyRatingSubElementUpdateSerializer(instance, data=request.data, fields=tuple(fields))
         else:
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer.is_valid(raise_exception=True)

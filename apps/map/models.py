@@ -21,6 +21,7 @@ class Region(models.Model):
     class Meta:
         verbose_name = 'Район'
         verbose_name_plural = 'Районы'
+        ordering = ('name', )
 
     def __str__(self):
         return self.name
