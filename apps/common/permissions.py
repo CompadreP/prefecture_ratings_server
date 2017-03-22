@@ -5,8 +5,61 @@ from apps.employees.models import PrefectureEmployee
 from apps.ratings.models import MonthlyRatingElement
 
 
-class AdminOnlyPermission(BasePermission):
+class MonthlyRatingPermission(BasePermission):
+    def has_object_permission(self, request, view, obj: MonthlyRatingElement):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        else:
+            if PrefectureEmployee.objects.filter(
+                    user=request.user.id).exists():
+                if request.user.prefectureemployee.can_approve_rating:
+                    return True
+                else:
+                    return False
+            else:
+                return False
 
+
+class MonthlyRatingElementPermission(BasePermission):
+    def has_object_permission(self, request, view, obj: MonthlyRatingElement):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        else:
+            if request.user.is_anonymous:
+                return False
+            if request.method == 'PATCH':
+                if 'additional_description' in request.data:
+                    if request.user.is_admin:
+                        return True
+                    else:
+                        return False
+                if 'responsible' in request.data:
+                    if request.user.is_admin:
+                        return True
+                    else:
+                        return False
+                if 'negotiator_comment' in request.data:
+                    if PrefectureEmployee.objects.filter(
+                            user=request.user.id).exists():
+                        if request.user.prefectureemployee.can_approve_rating:
+                            return True
+                        else:
+                            return False
+                    else:
+                        return False
+                if 'region_comment' in request.data:
+                    if PrefectureEmployee.objects.filter(
+                            user=request.user.id).exists():
+                        if request.user.prefectureemployee == obj.responsible:
+                            return True
+                        else:
+                            return False
+                    else:
+                        return False
+        return False
+
+
+class AdminOnlyPermission(BasePermission):
     def has_permission(self, request, view):
         if request.user.is_admin:
             return True
@@ -15,7 +68,6 @@ class AdminOnlyPermission(BasePermission):
 
 
 class NegotiatorOnlyPermission(BasePermission):
-
     def has_object_permission(self, request, view, obj):
         if PrefectureEmployee.objects.filter(user=request.user.id).exists():
             if request.user.prefectureemployee.can_approve_rating:
@@ -27,7 +79,6 @@ class NegotiatorOnlyPermission(BasePermission):
 
 
 class ResponsibleOnlyPermission(BasePermission):
-
     def has_object_permission(self, request, view, obj):
         if PrefectureEmployee.objects.filter(user=request.user.id).exists():
             if request.user.prefectureemployee == obj.responsible:
@@ -39,16 +90,17 @@ class ResponsibleOnlyPermission(BasePermission):
 
 
 class SubElementPermission(BasePermission):
-
     def has_permission(self, request, view):
         if request.method in permissions.SAFE_METHODS:
             return True
         else:
             if request.user.is_anonymous:
                 return False
-            if PrefectureEmployee.objects.filter(user=request.user.id).exists():
+            if PrefectureEmployee.objects.filter(
+                    user=request.user.id).exists():
                 if request.method == 'POST':
-                    component = MonthlyRatingElement.objects.get(pk=request.query_params['component_id'])
+                    component = MonthlyRatingElement.objects.get(
+                        pk=request.query_params['component_id'])
                     if component.responsible == request.user.prefectureemployee:
                         return True
                     else:

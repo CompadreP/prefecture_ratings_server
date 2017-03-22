@@ -84,10 +84,10 @@ class RatingsUser(AbstractBaseUser):
 
 class Employee(models.Model):
     user = models.OneToOneField(RatingsUser, on_delete=models.CASCADE)
-    first_name = models.CharField(max_length=100,
-                                  verbose_name='Имя')
     last_name = models.CharField(max_length=100,
                                  verbose_name='Фамилия')
+    first_name = models.CharField(max_length=100,
+                                  verbose_name='Имя')
     patronymic = models.CharField(max_length=100,
                                   null=True,
                                   blank=True,

@@ -3,12 +3,11 @@ from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import list_route, detail_route
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from apps.common.permissions import NegotiatorOnlyPermission, \
-    ResponsibleOnlyPermission, SubElementPermission, AdminOnlyPermission
+from apps.common.permissions import SubElementPermission, \
+    MonthlyRatingElementPermission, MonthlyRatingPermission
 from apps.common.response_wrappers import bad_request_response
 from apps.ratings.models import MonthlyRating, MonthlyRatingElement, \
     MonthlyRatingSubElement
@@ -16,8 +15,8 @@ from apps.ratings.serializers import MonthlyRatingListSerializer, \
     MonthlyRatingDetailSerializer, MonthlyRatingElementDetailFullSerializer, \
     MonthlyRatingSubElementCreateSerializer, \
     MonthlyRatingSubElementSerializer, \
-    MonthlyRatingElementDetailNoSubElementSerializer, \
-    MonthlyRatingSubElementUpdateSerializer
+    MonthlyRatingSubElementUpdateSerializer, \
+    MonthlyRatingElementSimpleSerializer
 
 
 class MonthlyRatingsViewSet(GenericViewSet,
@@ -25,12 +24,27 @@ class MonthlyRatingsViewSet(GenericViewSet,
                             mixins.RetrieveModelMixin):
     queryset = MonthlyRating.objects.all()
     serializer_class = MonthlyRatingDetailSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (MonthlyRatingPermission, )
 
+    @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = MonthlyRatingListSerializer(queryset, many=True)
         return Response(serializer.data)
+
+    @detail_route(methods=['patch'])
+    @method_decorator(csrf_protect)
+    def change_state(self, request, *args, **kwargs):
+        rating = self.get_object()
+        if request.data.get('is_negotiated') is True:
+            rating.negotiate()
+        elif request.data.get('is_approved') is True:
+            if rating.is_negotiated is False:
+                return Response(data={'detail': 'wrong rating state'},
+                                status=status.HTTP_400_BAD_REQUEST)
+            else:
+                rating.approve()
+        return Response(status=status.HTTP_200_OK)
 
     @list_route(methods=['get'])
     @method_decorator(ensure_csrf_cookie)
@@ -55,61 +69,40 @@ class MonthlyRatingsViewSet(GenericViewSet,
             else:
                 current_month = last_approved.month + 1
                 current_year = last_approved.year
-            serializer = self.get_serializer(
-                queryset.get(year=current_year, month=current_month)
-            )
+            current = queryset.filter(year=current_year, month=current_month).first()
+            if current:
+                serializer = self.get_serializer(current)
+            else:
+                return Response(data={'detail': 'no_current_rating'}, status=status.HTTP_404_NOT_FOUND)
         else:
             serializer = self.get_serializer(queryset.first())
         return Response(serializer.data)
 
 
 class MonthlyRatingElementsViewSet(GenericViewSet,
-                                   mixins.RetrieveModelMixin,):
+                                   mixins.RetrieveModelMixin,
+                                   mixins.UpdateModelMixin):
     queryset = MonthlyRatingElement.objects.all()
-    permission_classes = (AllowAny, )
+    serializer_class = MonthlyRatingElementSimpleSerializer
+    permission_classes = (MonthlyRatingElementPermission, )
 
     @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         include_related = request.query_params.get('include_sub_elements') == 'true'
+
+        context = {}
         if include_related:
-            serializer = MonthlyRatingElementDetailFullSerializer(instance)
-        else:
-            serializer = MonthlyRatingElementDetailNoSubElementSerializer(instance)
+            context['options'] = ['include_sub_elements']
+        serializer = MonthlyRatingElementDetailFullSerializer(instance,
+                                                              context=context)
         return Response(serializer.data)
 
-    @detail_route(methods=['patch'], permission_classes=[AdminOnlyPermission])
-    @method_decorator(csrf_protect)
-    def additional_description(self, request, *args, **kwargs):
-        instance = self.get_object()
-        try:
-            instance.additional_description = str(request.data['additional_description'])
-            instance.save()
-        except KeyError:
-            return bad_request_response('incorrect_fields_set')
-        return Response()
-
-    @detail_route(methods=['patch'], permission_classes=[NegotiatorOnlyPermission])
-    @method_decorator(csrf_protect)
-    def negotiator_comment(self, request, *args, **kwargs):
-        instance = self.get_object()
-        try:
-            instance.negotiator_comment = str(request.data['negotiator_comment'])
-            instance.save()
-        except KeyError:
-            return bad_request_response('incorrect_fields_set')
-        return Response()
-
-    @detail_route(methods=['patch'], permission_classes=[ResponsibleOnlyPermission])
-    @method_decorator(csrf_protect)
-    def region_comment(self, request, *args, **kwargs):
-        instance = self.get_object()
-        try:
-            instance.region_comment = str(request.data['region_comment'])
-            instance.save()
-        except KeyError:
-            return bad_request_response('incorrect_fields_set')
-        return Response()
+    def get_serializer_context(self):
+        context = {}
+        if self.request.method == 'PATCH':
+            context['method'] = 'update'
+        return context
 
 
 class MonthlyRatingSubElementsViewSet(GenericViewSet,

@@ -1,23 +1,23 @@
 from django.db import transaction
+
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import IntegerField
 
 from apps.common.serializers import DynamicFieldsModelSerializer
 from apps.employees.serializers import PrefectureEmployeeDetailSerializer
 from apps.map.models import Region
-from apps.ratings.models import MonthlyRating, BaseDocument, MonthlyRatingElement, \
-    RatingElement, MonthlyRatingSubElement, MonthlyRatingSubElementValue
+from apps.ratings.models import MonthlyRating, BaseDocument, \
+    MonthlyRatingElement, RatingElement, MonthlyRatingSubElement, \
+    MonthlyRatingSubElementValue
 
 
 class MonthlyRatingListSerializer(DynamicFieldsModelSerializer):
-
     class Meta:
         model = MonthlyRating
-        fields = ('id', 'year', 'month', 'is_negotiated', 'is_approved', )
+        fields = ('id', 'year', 'month', 'is_negotiated', 'is_approved',)
 
 
 class BaseDocumentSerializer(DynamicFieldsModelSerializer):
-
     class Meta:
         model = BaseDocument
         fields = ('id', 'kind', 'description', 'description_imp')
@@ -31,14 +31,18 @@ class RatingElementSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = RatingElement
         fields = ('id', 'number', 'base_document', 'name', 'base_description',
-                  'weight', 'sub_elements_display_type')
+                  'weight', )
 
 
 class MonthlyRatingElementSimpleSerializer(DynamicFieldsModelSerializer):
     rating_element = RatingElementSerializer()
-    responsible = PrefectureEmployeeDetailSerializer(
-        fields=('id', 'first_name', 'last_name', 'patronymic')
-    )
+
+    def __init__(self, *args, **kwargs):
+        if not('context' in kwargs and kwargs['context'].get('method') == 'update'):
+            self.fields['responsible'] = PrefectureEmployeeDetailSerializer(
+                fields=('id', 'first_name', 'last_name', 'patronymic')
+            )
+        super(MonthlyRatingElementSimpleSerializer, self).__init__(*args, **kwargs)
 
     class Meta:
         model = MonthlyRatingElement
@@ -65,7 +69,7 @@ class MonthlyRatingDetailSerializer(DynamicFieldsModelSerializer):
 class MonthlyRatingSubElementValueSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = MonthlyRatingSubElementValue
-        fields = ('id', 'region', 'is_average', 'value', )
+        fields = ('id', 'region', 'is_average', 'value',)
 
 
 class MonthlyRatingSubElementSerializer(DynamicFieldsModelSerializer):
@@ -77,7 +81,7 @@ class MonthlyRatingSubElementSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = MonthlyRatingSubElement
         fields = ('id', 'name', 'date', 'responsible', 'values', 'best_type',
-                  'description', 'document', )
+                  'description', 'document',)
 
 
 class MonthlyRatingElementDetailFullSerializer(DynamicFieldsModelSerializer):
@@ -86,25 +90,16 @@ class MonthlyRatingElementDetailFullSerializer(DynamicFieldsModelSerializer):
     responsible = PrefectureEmployeeDetailSerializer(
         fields=('id', 'first_name', 'last_name', 'patronymic')
     )
-    related_sub_elements = MonthlyRatingSubElementSerializer(many=True)
+
+    def __init__(self, *args, **kwargs):
+        if 'context' in kwargs and kwargs['context'].get('options') and 'include_sub_elements' in kwargs['context'].get('options'):
+            self.fields['related_sub_elements'] = MonthlyRatingSubElementSerializer(many=True)
+        super(MonthlyRatingElementDetailFullSerializer, self).__init__(*args, **kwargs)
 
     class Meta:
         model = MonthlyRatingElement
         fields = ('id', 'monthly_rating', 'rating_element', 'responsible',
                   'values', 'related_sub_elements')
-
-
-class MonthlyRatingElementDetailNoSubElementSerializer(DynamicFieldsModelSerializer):
-    monthly_rating = MonthlyRatingListSerializer()
-    rating_element = RatingElementSerializer()
-    responsible = PrefectureEmployeeDetailSerializer(
-        fields=('id', 'first_name', 'last_name', 'patronymic')
-    )
-
-    class Meta:
-        model = MonthlyRatingElement
-        fields = ('id', 'monthly_rating', 'rating_element', 'responsible',
-                  'values')
 
 
 class MonthlyRatingSubElementBaseChangeSerializer(DynamicFieldsModelSerializer):
@@ -113,24 +108,26 @@ class MonthlyRatingSubElementBaseChangeSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = MonthlyRatingSubElement
         fields = ('id', 'name', 'date', 'responsible', 'values', 'best_type',
-                  'description', )
+                  'description',)
 
     def validate_values(self, values):
         for value in values:
             value_id = value.get('id', None)
             if value_id:
-                if MonthlyRatingSubElementValue.objects.get(pk=value_id).monthly_rating_sub_element != self.instance:
-                    raise ValidationError('value belongs to another sub_element')
+                if MonthlyRatingSubElementValue.objects.get(
+                        pk=value_id).monthly_rating_sub_element != self.instance:
+                    raise ValidationError(
+                        'value belongs to another sub_element')
             if value['is_average'] and value['value']:
                 raise ValidationError('both "is_average" and "value" set')
         return values
 
 
 class MonthlyRatingSubElementCreateSerializer(MonthlyRatingSubElementBaseChangeSerializer):
-
     @transaction.atomic
     def create(self, validated_data):
-        element = MonthlyRatingElement.objects.get(pk=self.context['element_id'])
+        element = MonthlyRatingElement.objects.get(
+            pk=self.context['element_id'])
         validated_data['monthly_rating_element'] = element
         values = validated_data.pop('values', None)
         instance = self.Meta.model.objects.create(**validated_data)
@@ -150,14 +147,19 @@ class MonthlyRatingSubElementCreateSerializer(MonthlyRatingSubElementBaseChangeS
         return instance
 
 
-class MonthlyRatingSubElementValueUpdateSerializer(MonthlyRatingSubElementValueSerializer):
+class MonthlyRatingSubElementValueUpdateSerializer(
+    MonthlyRatingSubElementValueSerializer):
     id = IntegerField(required=True)
 
 
-class MonthlyRatingSubElementUpdateSerializer(MonthlyRatingSubElementBaseChangeSerializer):
-    original_value_fields = set(MonthlyRatingSubElementValueSerializer.Meta.fields)
+class MonthlyRatingSubElementUpdateSerializer(
+    MonthlyRatingSubElementBaseChangeSerializer):
+    original_value_fields = set(
+        MonthlyRatingSubElementValueSerializer.Meta.fields)
     original_value_fields.remove('region')
-    values = MonthlyRatingSubElementValueUpdateSerializer(many=True, fields=tuple(original_value_fields))
+    values = MonthlyRatingSubElementValueUpdateSerializer(many=True,
+                                                          fields=tuple(
+                                                              original_value_fields))
 
     @transaction.atomic
     def update(self, instance, validated_data):

@@ -105,7 +105,6 @@ MonthlyRating
                 "name": <str>,
                 "base_description": <str>,
                 "weight": <int>,
-                "sub_elements_display_type": <int>  // 1 - decimal, 2 - percent
             },
             "responsible": {
                 "id": <int>,
@@ -158,7 +157,6 @@ MonthlyRatingElement
             "name": <str>,
             "base_description": <str>,
             "weight": <int>,
-            "sub_elements_display_type": <int>  // 1 - decimal, 2 - percent
         },
         "responsible": {
             "id": <int>,
@@ -184,26 +182,31 @@ MonthlyRatingElement
                                     // is_average == true
             }],
             "best_type": <int>,  // 1 - "min", 2 - "max"
+            "display_type": <int>, // 1 - number, 2 - percent
             "description": <str>,  // unlimited
             "document": <str>  // URL to file download
         }]
     }
 
-* `PATCH /api/ratings/monthly/elements/{id}/negotiator_comment/`
+* `PATCH /api/ratings/monthly/elements/{id}/`
+
+.. code-block:: javascript
+
+    {
+        "responsible": <int>  // responsible_id
+    }
+
+.. code-block:: javascript
+
+    {
+        "additional_description": <str>
+    }
 
 .. code-block:: javascript
 
     {
         "negotiator_comment": <str>
     }
-
-Returns:
-
-.. code-block:: javascript
-
-    {}
-
-* `PATCH /api/ratings/monthly/elements/{id}/region_comment/`
 
 .. code-block:: javascript
 

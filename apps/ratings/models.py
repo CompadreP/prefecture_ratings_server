@@ -91,12 +91,17 @@ class MonthlyRating(models.Model):
     def __str__(self):
         return 'Год - {}, месяц - {}'.format(self.year, self.month)
 
-    def approve(self):
-        # TODO on approve save to mongo fully serialized and generate excel
-        pass
+    def negotiate(self):
+        self.is_negotiated = True
+        self.save()
+
+    def approve(self, user=None):
+        # TODO on approve save to mongo fully serialized, generate excel and send emails
+        self.is_approved = True
+        self.save()
 
     def send_negotiation_emails(self):
-        # mass mail
+        # TODO send emails
         pass
 
     def send_approved_emails(self):
@@ -105,10 +110,6 @@ class MonthlyRating(models.Model):
 
 
 class RatingElement(models.Model):
-    DISPLAY_TYPE_CHOICES = [
-        (1, 'десятичное число'),
-        (2, 'процент'),
-    ]
     WEIGHT_CHOICES = [(r, r) for r in
                       range(1, 11)]
     number = models.PositiveIntegerField(verbose_name='№ п/п')
@@ -121,10 +122,6 @@ class RatingElement(models.Model):
     weight = models.SmallIntegerField(
         verbose_name='Вес',
         choices=WEIGHT_CHOICES
-    )
-    sub_elements_display_type = models.SmallIntegerField(
-        verbose_name='Тип отображения подкомпонентов',
-        choices=DISPLAY_TYPE_CHOICES
     )
     responsible = models.ForeignKey(PrefectureEmployee,
                                     on_delete=models.SET_NULL,
@@ -252,6 +249,10 @@ class MonthlyRatingSubElement(models.Model):
         (1, 'мин'),
         (2, 'макс'),
     ]
+    DISPLAY_TYPE_CHOICES = [
+        (1, 'десятичное число'),
+        (2, 'процент'),
+    ]
     monthly_rating_element = models.ForeignKey(
         MonthlyRatingElement,
         on_delete=models.CASCADE,
@@ -266,6 +267,8 @@ class MonthlyRatingSubElement(models.Model):
                                     null=True)
     best_type = models.SmallIntegerField(choices=BEST_TYPE_CHOICES)
     document = models.FileField(upload_to='uploads/%Y/%m/%d/documents/')
+    display_type = models.SmallIntegerField(choices=DISPLAY_TYPE_CHOICES,
+                                            default=1)
     # regions = models.ManyToManyField(
     #     Region,
     #     through='MonthlyRatingSubElementValue',
@@ -321,7 +324,7 @@ class MonthlyRatingSubElementValue(models.Model):
     )
     is_average = models.BooleanField(default=False)
     value = models.DecimalField(max_digits=8,
-                                decimal_places=2,
+                                decimal_places=5,
                                 null=True,
                                 blank=True)
 

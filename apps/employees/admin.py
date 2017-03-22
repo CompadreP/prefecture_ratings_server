@@ -79,7 +79,7 @@ class PrefectureEmployeeForm(EmployeeForm):
 
     class Meta:
         model = PrefectureEmployee
-        fields = ('email', 'first_name', 'last_name', 'patronymic',
+        fields = ('email', 'last_name', 'first_name', 'patronymic',
                   'organization', 'can_approve_rating',)
 
 
@@ -95,7 +95,7 @@ class RegionEmployeeForm(EmployeeForm):
 
     class Meta:
         model = RegionEmployee
-        fields = ('email', 'first_name', 'last_name', 'patronymic',
+        fields = ('email', 'last_name', 'first_name', 'patronymic',
                   'organization', )
 
 
