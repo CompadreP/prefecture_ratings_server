@@ -100,7 +100,7 @@ class SubElementPermission(BasePermission):
                     user=request.user.id).exists():
                 if request.method == 'POST':
                     component = MonthlyRatingElement.objects.get(
-                        pk=request.query_params['component_id'])
+                        pk=request.query_params['element_id'])
                     if component.responsible == request.user.prefectureemployee:
                         return True
                     else:

@@ -260,7 +260,7 @@ class MonthlyRatingSubElement(models.Model):
     )
     name = models.CharField(max_length=1000)
     date = models.DateField(null=True, blank=True)
-    description = models.TextField()
+    description = models.TextField(null=True, blank=True)
     responsible = models.ForeignKey(PrefectureEmployee,
                                     on_delete=models.SET_NULL,
                                     blank=True,
@@ -306,13 +306,7 @@ class MonthlyRatingSubElement(models.Model):
         pass
 
     def get_normalized_values(self) -> Dict[int, Decimal]:  # step 4
-        # !!! stub
-        import random
-
-        dct = {}
-        for region in Region.objects.all():
-            dct[region.id] = Decimal(str(random.randint / 100)[:4])
-        return dct
+        pass
 
 
 class MonthlyRatingSubElementValue(models.Model):
