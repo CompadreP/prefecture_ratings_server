@@ -13,7 +13,9 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
+from django.conf import settings
 from django.conf.urls import url, include
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.http import HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
@@ -30,7 +32,6 @@ admin.site.site_header = 'Администрирование'
 def main_page(request, *args, **kwargs):
     return HttpResponse()
 
-
 urlpatterns = [
     url(r'^api/ratings/', include('apps.ratings.urls')),
     url(r'^api/map/', include('apps.map.urls')),
@@ -41,3 +42,7 @@ urlpatterns = [
     url(r'^password_set/', include(password_set_urlpatterns)),
     url(r'^forgot_password/', include(password_reset_urlpatterns)),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

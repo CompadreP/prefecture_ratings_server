@@ -1,8 +1,12 @@
+from base64 import b64decode
+
+from django.core.files.base import ContentFile
 from django.db import transaction
 
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import IntegerField
 
+from apps.common.exceptions import InvalidDocumentEncoding
 from apps.common.serializers import DynamicFieldsModelSerializer
 from apps.employees.serializers import PrefectureEmployeeDetailSerializer
 from apps.map.models import Region
@@ -131,7 +135,21 @@ class MonthlyRatingSubElementRetrieveSerializer(MonthlyRatingSubElementBaseSeria
     )
 
 
-class MonthlyRatingSubElementCreateSerializer(MonthlyRatingSubElementBaseSerializer):
+class MonthlyRatingSubElementChangeSerializer(MonthlyRatingSubElementBaseSerializer):
+
+    def __init__(self, *args, **kwargs):
+        if 'document' in kwargs['data']:
+            document = kwargs['data'].get('document', None)
+            if document:
+                try:
+                    document_base64_bin = document['data'].partition('base64,')[2]
+                    document_raw_bin = b64decode(document_base64_bin)
+                    converted_document = ContentFile(document_raw_bin)
+                    converted_document.name = document['file_name']
+                    kwargs['data']['document'] = converted_document
+                except KeyError:
+                    raise InvalidDocumentEncoding()
+        super(MonthlyRatingSubElementChangeSerializer, self).__init__(*args, **kwargs)
 
     @transaction.atomic
     def create(self, validated_data):
@@ -154,9 +172,6 @@ class MonthlyRatingSubElementCreateSerializer(MonthlyRatingSubElementBaseSeriali
             default_data['region'] = region
             MonthlyRatingSubElementValue.objects.create(**default_data)
         return instance
-
-
-class MonthlyRatingSubElementUpdateSerializer(MonthlyRatingSubElementBaseSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):

@@ -6,6 +6,7 @@ from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
+from apps.common.exceptions import InvalidDocumentEncoding
 from apps.common.permissions import SubElementPermission, \
     MonthlyRatingElementPermission, MonthlyRatingPermission
 from apps.common.response_wrappers import bad_request_response
@@ -13,11 +14,9 @@ from apps.ratings.models import MonthlyRating, MonthlyRatingElement, \
     MonthlyRatingSubElement
 from apps.ratings.serializers import MonthlyRatingListSerializer, \
     MonthlyRatingDetailSerializer, MonthlyRatingElementDetailFullSerializer, \
-    MonthlyRatingSubElementCreateSerializer, \
     MonthlyRatingElementSimpleSerializer, \
     MonthlyRatingSubElementRetrieveSerializer, \
-    MonthlyRatingSubElementBaseSerializer, \
-    MonthlyRatingSubElementUpdateSerializer
+    MonthlyRatingSubElementChangeSerializer
 
 
 class MonthlyRatingsViewSet(GenericViewSet,
@@ -109,6 +108,13 @@ class MonthlyRatingElementsViewSet(GenericViewSet,
         return context
 
 
+
+class Base64FileHandleMixin:
+
+    def document_to_file_filed(self):
+        pass
+
+
 class MonthlyRatingSubElementsViewSet(GenericViewSet,
                                       mixins.RetrieveModelMixin,
                                       mixins.CreateModelMixin,
@@ -144,23 +150,20 @@ class MonthlyRatingSubElementsViewSet(GenericViewSet,
 
     @method_decorator(csrf_protect)
     def update(self, request, *args, **kwargs):
-        # document = request.data.pop('document', None)
-        # # document = request.data.FILES.get('file')
-        # if document:
-        #     # TODO handle document
-        #     pass
-        return super(MonthlyRatingSubElementsViewSet, self).update(request,
-                                                                   *args,
-                                                                   **kwargs)
+        try:
+            return super(MonthlyRatingSubElementsViewSet, self)\
+                        .update(request, *args, **kwargs)
+        except InvalidDocumentEncoding:
+            return bad_request_response(error_code='wrong_document_encoding')
 
     def get_serializer(self, *args, **kwargs):
         kwargs['context'] = self.get_serializer_context()
         if self.request.method == 'GET':
             serializer_class = MonthlyRatingSubElementRetrieveSerializer
         elif self.request.method == 'PATCH':
-            serializer_class = MonthlyRatingSubElementUpdateSerializer
+            serializer_class = MonthlyRatingSubElementChangeSerializer
         elif self.request.method == 'POST':
-            serializer_class = MonthlyRatingSubElementCreateSerializer
+            serializer_class = MonthlyRatingSubElementChangeSerializer
             kwargs['context']['element_id'] = int(
                 self.request.query_params.get('element_id'))
         else:

@@ -99,9 +99,9 @@ class SubElementPermission(BasePermission):
             if PrefectureEmployee.objects.filter(
                     user=request.user.id).exists():
                 if request.method == 'POST':
-                    component = MonthlyRatingElement.objects.get(
+                    element = MonthlyRatingElement.objects.get(
                         pk=request.query_params['element_id'])
-                    if component.responsible == request.user.prefectureemployee:
+                    if element.responsible == request.user.prefectureemployee:
                         return True
                     else:
                         return False
@@ -114,6 +114,6 @@ class SubElementPermission(BasePermission):
         if request.method in ['PUT', 'DELETE']:
             employee = request.user.prefectureemployee
             return obj.responsible == employee \
-                   or obj.monthly_rating_component.responsible == employee
+                   or obj.monthly_rating_element.responsible == employee
         else:
             return True
