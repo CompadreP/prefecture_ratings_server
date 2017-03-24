@@ -14,9 +14,10 @@ from apps.ratings.models import MonthlyRating, MonthlyRatingElement, \
 from apps.ratings.serializers import MonthlyRatingListSerializer, \
     MonthlyRatingDetailSerializer, MonthlyRatingElementDetailFullSerializer, \
     MonthlyRatingSubElementCreateSerializer, \
-    MonthlyRatingSubElementSerializer, \
-    MonthlyRatingSubElementUpdateSerializer, \
-    MonthlyRatingElementSimpleSerializer
+    MonthlyRatingElementSimpleSerializer, \
+    MonthlyRatingSubElementRetrieveSerializer, \
+    MonthlyRatingSubElementBaseSerializer, \
+    MonthlyRatingSubElementUpdateSerializer
 
 
 class MonthlyRatingsViewSet(GenericViewSet,
@@ -24,7 +25,7 @@ class MonthlyRatingsViewSet(GenericViewSet,
                             mixins.RetrieveModelMixin):
     queryset = MonthlyRating.objects.all()
     serializer_class = MonthlyRatingDetailSerializer
-    permission_classes = (MonthlyRatingPermission, )
+    permission_classes = (MonthlyRatingPermission,)
 
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
@@ -69,11 +70,13 @@ class MonthlyRatingsViewSet(GenericViewSet,
             else:
                 current_month = last_approved.month + 1
                 current_year = last_approved.year
-            current = queryset.filter(year=current_year, month=current_month).first()
+            current = queryset.filter(year=current_year,
+                                      month=current_month).first()
             if current:
                 serializer = self.get_serializer(current)
             else:
-                return Response(data={'detail': 'no_current_rating'}, status=status.HTTP_404_NOT_FOUND)
+                return Response(data={'detail': 'no_current_rating'},
+                                status=status.HTTP_404_NOT_FOUND)
         else:
             serializer = self.get_serializer(queryset.first())
         return Response(serializer.data)
@@ -84,12 +87,13 @@ class MonthlyRatingElementsViewSet(GenericViewSet,
                                    mixins.UpdateModelMixin):
     queryset = MonthlyRatingElement.objects.all()
     serializer_class = MonthlyRatingElementSimpleSerializer
-    permission_classes = (MonthlyRatingElementPermission, )
+    permission_classes = (MonthlyRatingElementPermission,)
 
     @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        include_related = request.query_params.get('include_sub_elements') == 'true'
+        include_related = request.query_params.get(
+            'include_sub_elements') == 'true'
 
         context = {}
         if include_related:
@@ -115,52 +119,50 @@ class MonthlyRatingSubElementsViewSet(GenericViewSet,
 
     @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = MonthlyRatingSubElementSerializer(instance)
-        return Response(serializer.data)
+        return super(MonthlyRatingSubElementsViewSet, self).retrieve(request,
+                                                                     *args,
+                                                                     **kwargs)
 
     @method_decorator(csrf_protect)
     def create(self, request, *args, **kwargs):
-        document = request.data.pop('document', None)
-        # document = request.data.FILES.get('file')
-        if document:
-            # TODO handle document
-            pass
+        # document = request.data.pop('document', None)
+        # # document = request.data.FILES.get('file')
+        # if document:
+        #     # TODO handle document
+        #     pass
         try:
-            element_id = int(request.query_params.get('element_id'))
+            request.query_params.get('element_id')
         except (KeyError, TypeError):
             return bad_request_response(error_code='wrong_element_id')
-        serializer = MonthlyRatingSubElementCreateSerializer(
-            data=request.data,
-            context={'element_id': element_id}
-        )
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data,
-                        status=status.HTTP_201_CREATED,
-                        headers=headers)
+        if not MonthlyRatingElement.objects.filter(
+                    pk=request.query_params.get('element_id')
+                ).exists():
+            return bad_request_response(error_code='wrong_element_id')
+        return super(MonthlyRatingSubElementsViewSet, self).create(request,
+                                                                   *args,
+                                                                   **kwargs)
 
     @method_decorator(csrf_protect)
     def update(self, request, *args, **kwargs):
-        document = request.data.pop('document', None)
-        if document:
-            # TODO handle document
-            pass
-        instance = self.get_object()
-        if request.user.prefectureemployee == instance.monthly_rating_element.responsible:
-            serializer = MonthlyRatingSubElementUpdateSerializer(instance, data=request.data)
-        elif request.user.prefectureemployee == instance.responsible:
-            fields = set(MonthlyRatingSubElementUpdateSerializer.Meta.fields)
-            fields.remove('responsible')
-            serializer = MonthlyRatingSubElementUpdateSerializer(instance, data=request.data, fields=tuple(fields))
-        else:
-            return Response(status=status.HTTP_403_FORBIDDEN)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
+        # document = request.data.pop('document', None)
+        # # document = request.data.FILES.get('file')
+        # if document:
+        #     # TODO handle document
+        #     pass
+        return super(MonthlyRatingSubElementsViewSet, self).update(request,
+                                                                   *args,
+                                                                   **kwargs)
 
-        if getattr(instance, '_prefetched_objects_cache', None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
-            instance._prefetched_objects_cache = {}
-        return Response(serializer.data)
+    def get_serializer(self, *args, **kwargs):
+        kwargs['context'] = self.get_serializer_context()
+        if self.request.method == 'GET':
+            serializer_class = MonthlyRatingSubElementRetrieveSerializer
+        elif self.request.method == 'PATCH':
+            serializer_class = MonthlyRatingSubElementUpdateSerializer
+        elif self.request.method == 'POST':
+            serializer_class = MonthlyRatingSubElementCreateSerializer
+            kwargs['context']['element_id'] = int(
+                self.request.query_params.get('element_id'))
+        else:
+            serializer_class = self.get_serializer_class()
+        return serializer_class(*args, **kwargs)

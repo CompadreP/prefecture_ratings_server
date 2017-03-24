@@ -117,7 +117,7 @@ MonthlyRating
             "region_comment": <str> | null,  // OPTIONAL
             "values": [{
                 "region_id": <int>,
-                "value": <decimal> | null  // OPTIONAL max_digits=8, decimal_places=2
+                "value": <decimal> | null  // OPTIONAL max_digits=8, decimal_places=5
             }],
         }]
     }
@@ -178,7 +178,7 @@ MonthlyRatingElement
             "values": [{
                 "region": <int>,  // region_id
                 "is_average": <bool>,
-                "value": <decimal>  // max_digits=8, decimal_places=2, absent if
+                "value": <decimal>  // max_digits=8, decimal_places=5, absent if
                                     // is_average == true
             }],
             "best_type": <int>,  // 1 - "min", 2 - "max"
@@ -240,7 +240,7 @@ MonthlyRatingSubElement
         "values": [{
             "region": <int>,  // region_id
             "is_average": <bool>,
-            "value": <decimal>  // max_digits=8, decimal_places=2, absent if
+            "value": <decimal>  // max_digits=8, decimal_places=5, absent if
                                 // is_average == true
         }],
         "best_type": <int>,  // 1 - "min", 2 - "max"
@@ -253,13 +253,14 @@ MonthlyRatingSubElement
 .. code-block:: javascript
 
     {
+        "id": <int>,
         "name": <str>,  // max 1000 symbols
         "date": <str>,  // OPTIONAL YYYY-MM-DD
         "responsible": <int>,  // OPTIONAL prefecture_employee id
         "values": [{
             "region": <int>,  // region id
             "is_average": <bool>,
-            "value": <decimal> | null // max_digits=8, decimal_places=2, if
+            "value": <decimal> | null // max_digits=8, decimal_places=5, if
                                       // is_average == true, should be null
         }],
         "best_type": <int>,  // 1 - "min", 2 - "max"
@@ -275,7 +276,7 @@ Returns:
         GET body
     }
 
-* `PUT /api/ratings/monthly/sub_elements/{id}/`
+* `PATCH /api/ratings/monthly/sub_elements/{id}/`
 
 If user is responsible for whole element:
 
@@ -286,9 +287,10 @@ If user is responsible for whole element:
         "date": <str>,  // OPTIONAL YYYY-MM-DD
         "responsible": <int>,  // OPTIONAL prefecture_employee id
         "values": [{
+            "id": <int>,
             "region_id": <int>,
             "is_average": <bool>,
-            "value": <decimal> | null  // max_digits=8, decimal_places=2, if
+            "value": <decimal> | null  // max_digits=8, decimal_places=5, if
                                        // is_average == true, should be null
         }],
         "best_type": <int>,  // 1 - "min", 2 - "max"
@@ -304,9 +306,10 @@ If user is responsible for sub_element only:
         "name": <str>,  // max 1000 symbols
         "date": <str>,  // OPTIONAL YYYY-MM-DD
         "values": [{
+            "id": <int>,
             "region_id": <int>,
             "is_average": <bool>,
-            "value": <decimal> | null  // max_digits=8, decimal_places=2, if
+            "value": <decimal> | null  // max_digits=8, decimal_places=5, if
                                        // is_average == true, should be null
         }],
         "best_type": <int>,  // 1 - "min", 2 - "max"

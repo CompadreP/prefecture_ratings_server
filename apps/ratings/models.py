@@ -222,26 +222,27 @@ class MonthlyRatingElement(models.Model):
     @property
     def values(self) -> List[dict]:
         regions_ids = Region.objects.values_list('id')
-        regions_dict = {region_id[0]: [] for region_id in regions_ids}
-        for sub_element in self.related_sub_elements.all():
-            normalized_values = sub_element.get_normalized_values()
-            for k, v in normalized_values:
-                regions_dict[k].append(v)
-
-        values_dict = {}
-        for region_id in regions_dict:
-            try:
-                values_dict[region_id] = sum(regions_dict[region_id]) / self.related_sub_elements.count()
-            except ZeroDivisionError:
-                values_dict[region_id] = None
-        return_list = []
-        for k, v in values_dict.items():
-            dct = {
-                "region_id": k,
-                "value": v
-            }
-            return_list.append(dct)
-        return return_list
+        # regions_dict = {region_id[0]: [] for region_id in regions_ids}
+        # for sub_element in self.related_sub_elements.all():
+        #     normalized_values = sub_element.get_normalized_values()
+        #     for k, v in normalized_values:
+        #         regions_dict[k].append(v)
+        #
+        # values_dict = {}
+        # for region_id in regions_dict:
+        #     try:
+        #         values_dict[region_id] = sum(regions_dict[region_id]) / self.related_sub_elements.count()
+        #     except ZeroDivisionError:
+        #         values_dict[region_id] = None
+        # return_list = []
+        # for k, v in values_dict.items():
+        #     dct = {
+        #         "region_id": k,
+        #         "value": v
+        #     }
+        #     return_list.append(dct)
+        # return return_list
+        return None
 
 
 class MonthlyRatingSubElement(models.Model):
@@ -266,17 +267,17 @@ class MonthlyRatingSubElement(models.Model):
                                     blank=True,
                                     null=True)
     best_type = models.SmallIntegerField(choices=BEST_TYPE_CHOICES)
-    document = models.FileField(upload_to='uploads/%Y/%m/%d/documents/')
+    document = models.FileField(
+        upload_to='uploads/%Y/%m/%d/documents/',
+        null=True,
+        blank=True
+    )
     display_type = models.SmallIntegerField(choices=DISPLAY_TYPE_CHOICES,
                                             default=1)
-    # regions = models.ManyToManyField(
-    #     Region,
-    #     through='MonthlyRatingSubElementValue',
-    #     related_name='monthly_rating_sub_elements'
-    # )
 
     class Meta:
         unique_together = ('name', 'date', )
+        ordering = ('name', )
         verbose_name = 'Подкомпонент месячного рейтинга'
         verbose_name_plural = 'Подкомпоненты месячных рейтингов'
 
