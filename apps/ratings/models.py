@@ -1,8 +1,10 @@
 import datetime
+
+from django.dispatch.dispatcher import receiver
 from typing import List, Dict
 
-from decimal import Decimal
 from django.db import models
+from django.core.cache import cache
 
 from apps.employees.models import PrefectureEmployee
 from apps.map.models import Region
@@ -46,9 +48,11 @@ class BaseDocument(models.Model):
         (1, 'Основной'),
         (2, 'Показатель'),
     ]
-    kind = models.IntegerField(verbose_name='Тип документа', choices=BASE_DOCUMENT_CHOICES)
+    kind = models.IntegerField(verbose_name='Тип документа',
+                               choices=BASE_DOCUMENT_CHOICES)
     description = models.TextField(verbose_name='Наименование', unique=True)
-    description_imp = models.TextField(verbose_name='Наименование (повелительное)', unique=True)
+    description_imp = models.TextField(
+        verbose_name='Наименование (повелительное)', unique=True)
 
     class Meta:
         verbose_name = 'Документ-основание'
@@ -73,9 +77,9 @@ class MonthlyRating(models.Model):
                                     null=True,
                                     on_delete=models.SET_NULL)
     year = models.SmallIntegerField(verbose_name='Год',
-                                    choices=YEAR_CHOICES,)
+                                    choices=YEAR_CHOICES, )
     month = models.SmallIntegerField(verbose_name='Месяц',
-                                     choices=MONTH_CHOICES,)
+                                     choices=MONTH_CHOICES, )
     signer_text = models.ForeignKey(
         SignerText,
         verbose_name=SignerText._meta.verbose_name,
@@ -128,25 +132,28 @@ class RatingElement(models.Model):
                                     null=True,
                                     blank=True,
                                     verbose_name='Ответственный (базовый)')
-    valid_from_month = models.SmallIntegerField(verbose_name='Действует с месяца',
-                                                choices=MONTH_CHOICES,
-                                                db_index=True)
+    valid_from_month = models.SmallIntegerField(
+        verbose_name='Действует с месяца',
+        choices=MONTH_CHOICES,
+        db_index=True)
     valid_from_year = models.SmallIntegerField(verbose_name='Действует с года',
                                                choices=YEAR_CHOICES,
                                                db_index=True)
-    valid_to_month = models.SmallIntegerField(verbose_name='Действует по месяц(включительно)',
-                                              choices=MONTH_CHOICES,
-                                              null=True,
-                                              blank=True,
-                                              db_index=True)
-    valid_to_year = models.SmallIntegerField(verbose_name='Действует по год(включительно)',
-                                             choices=YEAR_CHOICES,
-                                             null=True,
-                                             blank=True,
-                                             db_index=True)
+    valid_to_month = models.SmallIntegerField(
+        verbose_name='Действует по месяц(включительно)',
+        choices=MONTH_CHOICES,
+        null=True,
+        blank=True,
+        db_index=True)
+    valid_to_year = models.SmallIntegerField(
+        verbose_name='Действует по год(включительно)',
+        choices=YEAR_CHOICES,
+        null=True,
+        blank=True,
+        db_index=True)
 
     class Meta:
-        ordering = ('number', )
+        ordering = ('number',)
         verbose_name = 'Базовый компонент рейтинга'
         verbose_name_plural = 'Базовые компоненты рейтинга'
 
@@ -154,7 +161,9 @@ class RatingElement(models.Model):
         string = (self._meta.verbose_name
                   + ' , id - {}, номер - {}'.format(self.id, self.number))
         if self.base_description:
-            string += ', "{}"'.format(self.base_description[:80] + '...' if len(self.base_description) > 80 else self.base_description)
+            string += ', "{}"'.format(
+                self.base_description[:80] + '...' if len(
+                    self.base_description) > 80 else self.base_description)
         return string
 
     @property
@@ -168,18 +177,29 @@ class RatingElement(models.Model):
             else:
                 first_invalid_month = self.valid_to_month + 1
                 first_invalid_year = self.valid_to_year
-            if datetime.date.today() >= datetime.date(year=first_invalid_year, month=first_invalid_month, day=1):
+            if datetime.date.today() >= datetime.date(year=first_invalid_year,
+                                                      month=first_invalid_month,
+                                                      day=1):
                 return False
             else:
                 return True
 
     def is_active_on_date(self, date):
-        valid_from = datetime.date(year=self.valid_from_year, month=self.valid_from_month, day=1)
+        valid_from = datetime.date(year=self.valid_from_year,
+                                   month=self.valid_from_month, day=1)
         if self.valid_to_year and self.valid_to_month:
-            valid_to = datetime.date(year=self.valid_to_year, month=self.valid_to_month, day=1) - datetime.timedelta(days=1)
+            valid_to = datetime.date(year=self.valid_to_year,
+                                     month=self.valid_to_month,
+                                     day=1) - datetime.timedelta(days=1)
             return valid_from <= date <= valid_to
         else:
             return valid_from <= date
+
+
+BEST_TYPE_CHOICES = [
+    (1, 'мин'),
+    (2, 'макс'),
+]
 
 
 class MonthlyRatingElement(models.Model):
@@ -210,6 +230,7 @@ class MonthlyRatingElement(models.Model):
         blank=True,
         null=True
     )
+    best_type = models.SmallIntegerField(choices=BEST_TYPE_CHOICES)
 
     class Meta:
         verbose_name = 'Компонент месячного рейтинга'
@@ -220,36 +241,26 @@ class MonthlyRatingElement(models.Model):
         return self._meta.verbose_name + ' , id - {}'.format(self.id)
 
     @property
-    def values(self) -> List[dict]:
+    def values(self) -> Dict:
         regions_ids = Region.objects.values_list('id')
-        # regions_dict = {region_id[0]: [] for region_id in regions_ids}
-        # for sub_element in self.related_sub_elements.all():
-        #     normalized_values = sub_element.get_normalized_values()
-        #     for k, v in normalized_values:
-        #         regions_dict[k].append(v)
-        #
-        # values_dict = {}
-        # for region_id in regions_dict:
-        #     try:
-        #         values_dict[region_id] = sum(regions_dict[region_id]) / self.related_sub_elements.count()
-        #     except ZeroDivisionError:
-        #         values_dict[region_id] = None
-        # return_list = []
-        # for k, v in values_dict.items():
-        #     dct = {
-        #         "region_id": k,
-        #         "value": v
-        #     }
-        #     return_list.append(dct)
-        # return return_list
-        return None
+        regions_dict = {region_id[0]: 0
+                        for region_id
+                        in regions_ids}
+        values_array = []
+        for sub_element in self.related_sub_elements.all():
+            values_array.append(sub_element.get_normalized_values())
+        for sub_element_dict in values_array:
+            for region_id, value in sub_element_dict.items():
+                regions_dict[region_id] += value
+        values_len = len(values_array)
+        if values_len != 0:
+            for region in regions_dict:
+                if regions_dict[region] is not None:
+                    regions_dict[region] /= values_len
+        return regions_dict
 
 
 class MonthlyRatingSubElement(models.Model):
-    BEST_TYPE_CHOICES = [
-        (1, 'мин'),
-        (2, 'макс'),
-    ]
     DISPLAY_TYPE_CHOICES = [
         (1, 'десятичное число'),
         (2, 'процент'),
@@ -276,38 +287,98 @@ class MonthlyRatingSubElement(models.Model):
                                             default=1)
 
     class Meta:
-        unique_together = ('name', 'date', )
-        ordering = ('name', )
+        unique_together = ('name', 'date',)
+        ordering = ('name',)
         verbose_name = 'Подкомпонент месячного рейтинга'
         verbose_name_plural = 'Подкомпоненты месячных рейтингов'
 
     def __str__(self):
         return self._meta.verbose_name + ' , id - {}'.format(self.id)
 
-    def get_flat_values(self):  # step 1
-        flat_vales = {}
-        for value in self.related_values:
-            if value.is_average:
-                flat_vales[value.region_id] = None
-            elif not value.value:
-                flat_vales[value.region_id] = 0
-            else:
-                flat_vales[value.region_id] = value.value
-        values_without_none = [value for value in flat_vales.values() if value is not None]
-        average = sum(values_without_none) / len(values_without_none)
-        for k, v in flat_vales:
-            if v is None:
-                k[v] = average
-        return flat_vales
+    @property
+    def normalized_cache_key(self):
+        return 'subelement_normalized_values_{}'.format(self.id)
 
-    def get_abs_values(self):  # step 2
-        pass
+    def get_min_value(self, lst: List, idx: int) -> float:
+        min_value = None
+        for value in lst:
+            if value[idx] is not None and \
+                    (min_value is None or value[idx] < min_value):
+                min_value = value[idx]
+        return min_value
 
-    def get_relative_values(self):  # step 3
-        pass
+    def get_avg_value(self, lst: List, idx: int) -> float:
+        sum_value = 0
+        for value in lst:
+            if value[idx] is not None:
+                sum_value += value[idx]
+        list_len = len(lst)
+        return sum_value / len(lst) if list_len else None
 
-    def get_normalized_values(self) -> Dict[int, Decimal]:  # step 4
-        pass
+    def get_max_value(self, lst: List, idx) -> float:
+        max_value = None
+        for value in lst:
+            if max_value is None or value[idx] > max_value:
+                max_value = value[idx]
+        return max_value
+
+    def get_non_negative_values(self) -> List[List]:  # step 1
+        extracted_values = \
+                [list(value)
+                 for value
+                 in self.values.values_list('region', 'is_average', 'value')]
+        avg_value = self.get_avg_value(extracted_values, 2)
+        min_value = self.get_min_value(extracted_values, 2)
+        for value in extracted_values:
+            if value[1]:
+                value[2] = avg_value
+            if value[2] is None:
+                value[2] = 0
+            if min_value < 0:
+                value[2] += abs(min_value)
+            del value[1]
+        return extracted_values
+
+    def get_relative_values(self) -> List[List]:  # step 2
+        extracted_values = self.get_non_negative_values()
+        if self.best_type == 1:
+            min_value = self.get_min_value(extracted_values, 1)
+            if min_value != 0:
+                for value in extracted_values:
+                    value[1] /= min_value
+        elif self.best_type == 2:
+            max_value = self.get_max_value(extracted_values, 1)
+            if max_value != 0:
+                for value in extracted_values:
+                    value[1] /= max_value
+        return extracted_values
+
+    def get_normalized_values(self) -> Dict:  # step 3
+        cached = False #cache.get(self.normalized_cache_key)
+        if cached:
+            return cached
+        else:
+            extracted_values = self.get_relative_values()
+            min_value = self.get_min_value(extracted_values, 1)
+            max_value = self.get_max_value(extracted_values, 1)
+            for value in extracted_values:
+                if min_value == max_value:
+                    value[1] = 1
+                elif self.best_type == 1:
+                    value[1] = (value[1] - max_value) / (min_value - max_value)
+                elif self.best_type == 2:
+                    value[1] = (value[1] - min_value) / (max_value - min_value)
+            normalized_values = {value[0]: value[1]
+                                 for value
+                                 in extracted_values}
+            cache.set(self.normalized_cache_key, normalized_values)
+            return normalized_values
+
+    def save(self, *args, **kwargs):
+        # TODO check if db query for comparing changing values and best type
+        # can be faster then calculating this on each save
+        cache.set(self.normalized_cache_key, self.get_normalized_values())
+        super(MonthlyRatingSubElement, self).save(*args, **kwargs)
 
 
 class MonthlyRatingSubElementValue(models.Model):
@@ -325,6 +396,7 @@ class MonthlyRatingSubElementValue(models.Model):
 
     class Meta:
         unique_together = ('region', 'monthly_rating_sub_element')
+        ordering = ('id', )
         verbose_name = 'Значение подкомпонента месячного рейтинга'
         verbose_name_plural = 'Значения подкомпонентов месячных рейтингов'
 

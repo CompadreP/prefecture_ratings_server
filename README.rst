@@ -122,14 +122,13 @@ MonthlyRating
         }]
     }
 
-* `GET /api/ratings/monthly/last_approved/`
-
-Same as previous, but returns last approved
-
 * `GET /api/ratings/monthly/current/`
 
-Same as previous, but returns current
+.. code-block:: javascript
 
+    {
+        "id": <int>,  // rating id to load
+    }
 
 MonthlyRatingElement
 --------------------
@@ -165,6 +164,9 @@ MonthlyRatingElement
             "patronymic": <str>
         } | null,  // OPTIONAL
         // if include_related == 'true'
+        "values": {
+            <region_id>: <decimal>
+        }
         "related_sub_elements": [{
             "id": <int>
             "name": <str>,  // max 1000 symbols

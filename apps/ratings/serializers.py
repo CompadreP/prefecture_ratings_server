@@ -4,7 +4,6 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import IntegerField
 
 from apps.common.exceptions import InvalidDocumentEncoding
 from apps.common.serializers import DynamicFieldsModelSerializer
@@ -52,7 +51,7 @@ class MonthlyRatingElementSimpleSerializer(DynamicFieldsModelSerializer):
         model = MonthlyRatingElement
         fields = ('id', 'rating_element', 'responsible',
                   'additional_description', 'negotiator_comment',
-                  'region_comment', 'values')
+                  'region_comment', 'best_type', 'values')
 
 
 class MonthlyRatingDetailSerializer(DynamicFieldsModelSerializer):
@@ -84,14 +83,16 @@ class MonthlyRatingElementDetailFullSerializer(DynamicFieldsModelSerializer):
     )
 
     def __init__(self, *args, **kwargs):
-        if 'context' in kwargs and kwargs['context'].get('options') and 'include_sub_elements' in kwargs['context'].get('options'):
+        if 'context' in kwargs \
+                and kwargs['context'].get('options') \
+                and 'include_sub_elements' in kwargs['context'].get('options'):
             self.fields['related_sub_elements'] = MonthlyRatingSubElementRetrieveSerializer(many=True)
         super(MonthlyRatingElementDetailFullSerializer, self).__init__(*args, **kwargs)
 
     class Meta:
         model = MonthlyRatingElement
         fields = ('id', 'monthly_rating', 'rating_element', 'responsible',
-                  'values', 'related_sub_elements')
+                  'values', 'related_sub_elements', 'best_type')
 
 
 class MonthlyRatingSubElementBaseSerializer(DynamicFieldsModelSerializer):
@@ -100,7 +101,7 @@ class MonthlyRatingSubElementBaseSerializer(DynamicFieldsModelSerializer):
     class Meta:
         model = MonthlyRatingSubElement
         fields = ('id', 'name', 'date', 'responsible', 'display_type',
-                  'values', 'best_type', 'description', 'document')
+                  'values', 'best_type', 'description', 'document', )
 
     def validate_name(self, name):
         if self.instance:

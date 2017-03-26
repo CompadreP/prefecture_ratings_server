@@ -48,17 +48,6 @@ class MonthlyRatingsViewSet(GenericViewSet,
 
     @list_route(methods=['get'])
     @method_decorator(ensure_csrf_cookie)
-    def last_approved(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-        last_approved = queryset.filter(is_approved=True).first()
-        if last_approved:
-            serializer = self.get_serializer(last_approved)
-            return Response(serializer.data)
-        else:
-            return Response(status=status.HTTP_404_NOT_FOUND)
-
-    @list_route(methods=['get'])
-    @method_decorator(ensure_csrf_cookie)
     def current(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         last_approved = queryset.filter(is_approved=True).first()
@@ -72,13 +61,11 @@ class MonthlyRatingsViewSet(GenericViewSet,
             current = queryset.filter(year=current_year,
                                       month=current_month).first()
             if current:
-                serializer = self.get_serializer(current)
+                return Response(data={'id': current.id})
             else:
-                return Response(data={'detail': 'no_current_rating'},
-                                status=status.HTTP_404_NOT_FOUND)
+                return Response(data={'id': last_approved.id})
         else:
-            serializer = self.get_serializer(queryset.first())
-        return Response(serializer.data)
+            return Response(data={'id': queryset.first().id})
 
 
 class MonthlyRatingElementsViewSet(GenericViewSet,
@@ -101,18 +88,17 @@ class MonthlyRatingElementsViewSet(GenericViewSet,
                                                               context=context)
         return Response(serializer.data)
 
+    @detail_route(methods=['get'])
+    @method_decorator(ensure_csrf_cookie)
+    def values(self, request, *args, **kwargs):
+        instance = self.get_object()
+        return Response(data=instance.values)
+
     def get_serializer_context(self):
         context = {}
         if self.request.method == 'PATCH':
             context['method'] = 'update'
         return context
-
-
-
-class Base64FileHandleMixin:
-
-    def document_to_file_filed(self):
-        pass
 
 
 class MonthlyRatingSubElementsViewSet(GenericViewSet,
@@ -131,11 +117,6 @@ class MonthlyRatingSubElementsViewSet(GenericViewSet,
 
     @method_decorator(csrf_protect)
     def create(self, request, *args, **kwargs):
-        # document = request.data.pop('document', None)
-        # # document = request.data.FILES.get('file')
-        # if document:
-        #     # TODO handle document
-        #     pass
         try:
             request.query_params.get('element_id')
         except (KeyError, TypeError):
