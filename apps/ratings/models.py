@@ -1,6 +1,5 @@
 import datetime
 
-from django.dispatch.dispatcher import receiver
 from typing import List, Dict
 
 from django.db import models
@@ -184,7 +183,7 @@ class RatingElement(models.Model):
             else:
                 return True
 
-    def is_active_on_date(self, date):
+    def is_active_on_date(self, date) -> bool:
         valid_from = datetime.date(year=self.valid_from_year,
                                    month=self.valid_from_month, day=1)
         if self.valid_to_year and self.valid_to_month:
