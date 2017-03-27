@@ -1,27 +1,113 @@
 from django.core.management.base import BaseCommand, CommandError
+from django.contrib.auth.models import Group
 
+from apps.employees.models import Organization
+from apps.map.models import Region, District
 from apps.ratings.models import BaseDocument, SignerText, RatingElement, \
-    MonthlyRating
+    MonthlyRating, MonthlyRatingElement
 
 
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
+        if Group.objects.count() > 0:
+            raise CommandError("Groups already created!")
+        if District.objects.count() > 0:
+            raise CommandError("Districts already created!")
+        if Region.objects.count() > 0:
+            raise CommandError("Regions already created!")
+        if Organization.objects.count() > 0:
+            raise CommandError("Organization already created!")
         if BaseDocument.objects.count() > 0:
             raise CommandError("Base document already created!")
+        if SignerText.objects.count() > 0:
+            raise CommandError("Signer text already created!")
+        if RatingElement.objects.count() > 0:
+            raise CommandError("Rating elements already created!")
+        if MonthlyRating.objects.count() > 0:
+            raise CommandError("Monthly rating already created!")
+        if MonthlyRatingElement.objects.count() > 0:
+            raise CommandError("Monthly rating elements already created!")
+        Group.objects.create(name='prefecture')
+        Group.objects.create(name='regions')
+        district = District.objects.create(name='САО')
+        Region.objects.create(
+            district=district,
+            name='Аэропорт'
+        )
+        Region.objects.create(
+            district=district,
+            name='Беговой'
+        )
+        Region.objects.create(
+            district=district,
+            name='Бескудниковский'
+        )
+        Region.objects.create(
+            district=district,
+            name='Войковский'
+        )
+        Region.objects.create(
+            district=district,
+            name='Восточное Дегунино'
+        )
+        Region.objects.create(
+            district=district,
+            name='Головинский'
+        )
+        Region.objects.create(
+            district=district,
+            name='Дмитровский'
+        )
+        Region.objects.create(
+            district=district,
+            name='Западное Дегунино'
+        )
+        Region.objects.create(
+            district=district,
+            name='Коптево'
+        )
+        Region.objects.create(
+            district=district,
+            name='Левобережный'
+        )
+        Region.objects.create(
+            district=district,
+            name='Молжаниновский'
+        )
+        Region.objects.create(
+            district=district,
+            name='Савёловский'
+        )
+        Region.objects.create(
+            district=district,
+            name='Сокол'
+        )
+        Region.objects.create(
+            district=district,
+            name='Тимирязевский'
+        )
+        Region.objects.create(
+            district=district,
+            name='Ховрино'
+        )
+        Region.objects.create(
+            district=district,
+            name='Хорошёвский'
+        )
+        Organization.objects.create(
+            name='Префектура САО',
+            district=district
+        )
         base_document = BaseDocument.objects.create(
             kind=1,
             description='Распоряжение префектуры САО от 08.09.2016 №532',
             description_imp='распоряжением префектуры САО от 08.09.2016 №532'
         )
-        if SignerText.objects.count() > 0:
-            raise CommandError("Signer text already created!")
         signer_text = SignerText.objects.create(
             text='УТВЕРЖДАЮ\nПервый заместитель префекта\nСеверного административного округа\nгорода Москвы\n\n___________________А.А.Велиховский',
             is_active=True
         )
-        if RatingElement.objects.count() > 0:
-            raise CommandError("Rating elements already created!")
         RatingElement.objects.create(
             number=1,
             base_document=base_document,
@@ -174,9 +260,7 @@ class Command(BaseCommand):
             valid_from_month=2,
             valid_from_year=2017,
         )
-        if MonthlyRating.objects.count() > 0:
-            raise CommandError("Monthly rating already created!")
-        MonthlyRating.objects.create(
+        rating = MonthlyRating.objects.create(
             base_document=base_document,
             is_negotiated=False,
             is_approved=False,
@@ -184,4 +268,9 @@ class Command(BaseCommand):
             month=2,
             signer_text=signer_text
         )
+        for element in RatingElement.objects.all():
+            MonthlyRatingElement.objects.create(
+                monthly_rating=rating,
+                rating_element=element
+            )
         print('Success!')

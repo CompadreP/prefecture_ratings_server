@@ -2,6 +2,7 @@ import datetime
 
 from django.conf import settings
 from django.contrib.auth import login, logout
+from django.contrib.auth.models import Group
 from django.template.response import TemplateResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
@@ -106,16 +107,15 @@ class LoginView(APIView):
         user = authenticate(email=email, password=password)
         if user is not None:
             login(request, user)
-            if PrefectureEmployee.objects.filter(user=user.id).exists():
+            if user.is_admin:
+                return_data = {'user':  RatingsUserSerializer(request.user).data}
+                return_data.update({'role': 'admin'})
+            elif Group.objects.get(name='prefecture') in user.groups.all():
                 return_data = PrefectureEmployeeDetailSerializer(request.user.prefectureemployee).data
                 return_data.update({'role': 'prefecture'})
-            elif RegionEmployee.objects.filter(user=user.id).exists():
+            elif Group.objects.get(name='region') in user.groups.all():
                 return_data = RegionEmployeeSerializer(request.user.regionemployee).data
                 return_data.update({'role': 'region'})
-            elif user.is_admin:
-                user_data = RatingsUserSerializer(request.user).data
-                return_data = {'user': user_data}
-                return_data.update({'role': 'admin'})
             else:
                 return Response(status=status.HTTP_400_BAD_REQUEST)
             return Response(data=return_data, status=status.HTTP_200_OK)
@@ -136,11 +136,19 @@ class ResetPasswordRequestView(APIView):
     # TODO throttling
     @method_decorator(csrf_protect)
     def post(self, request: Request, *args, **kwargs):
-        email = request.data['email']
+        try:
+            email = request.data['email']
+        except KeyError:
+            return Response(data={'detail': 'no_email_provided'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if not RatingsUser.objects.filter(email=email).exists():
+            return Response(data={'detail': 'no_such_user'},
+                            status=status.HTTP_400_BAD_REQUEST)
         subject = 'Сброс пароля аккаунта на сайте prefecture-ratings.ru'
         body = ('Кто-то (возможно не вы) запросил сброс пароля вашего аккаунта.'
                 '\n\nЕсли это были не вы, то просто проигнорируйте данное письмо.'
-                '\n\nЧтобы сбросить пароль и установить новый, перейдите по ссылке - {base_url}/password_set/{url_token}.'
+                '\n\nЧтобы сбросить пароль и установить новый, перейдите по ссылке '
+                '- {base_url}/password_set/{url_token}.'
                 '\n\nСсылка действительна в течении 24 часов.')
         generate_token_and_send_email(email, subject, body)
         return Response(status=status.HTTP_200_OK)

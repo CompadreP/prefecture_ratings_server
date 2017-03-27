@@ -1,4 +1,5 @@
-from django.contrib.auth.models import BaseUserManager, AbstractBaseUser
+from django.contrib.auth.models import BaseUserManager, AbstractBaseUser, User, \
+    Group, PermissionsMixin
 from django.db import models
 
 from apps.map.models import Region, District
@@ -46,7 +47,7 @@ class RatingsUserManager(BaseUserManager):
         return user
 
 
-class RatingsUser(AbstractBaseUser):
+class RatingsUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(
         verbose_name='email',
         max_length=255,

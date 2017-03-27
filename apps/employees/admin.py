@@ -82,6 +82,13 @@ class PrefectureEmployeeForm(EmployeeForm):
         fields = ('email', 'last_name', 'first_name', 'patronymic',
                   'organization', 'can_approve_rating',)
 
+    @transaction.atomic
+    def save(self, commit=True):
+        instance = super(PrefectureEmployeeForm, self).save(commit=commit)
+        instance.user.groups.add(Group.objects.get(name='prefecture'))
+        instance.save()
+        return instance
+
 
 class RegionEmployeeForm(EmployeeForm):
     def clean_organization(self):
@@ -97,6 +104,13 @@ class RegionEmployeeForm(EmployeeForm):
         model = RegionEmployee
         fields = ('email', 'last_name', 'first_name', 'patronymic',
                   'organization', )
+
+    @transaction.atomic
+    def save(self, commit=True):
+        instance = super(RegionEmployeeForm, self).save(commit=commit)
+        instance.user.groups.add(Group.objects.get(name='regions'))
+        instance.save()
+        return instance
 
 
 correct_location_message = "У организации должен быть указан либо " \

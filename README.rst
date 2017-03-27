@@ -1,5 +1,6 @@
+=============
 Authorization
-_____________
+=============
 
 * `POST /api/auth/login`
 
@@ -28,9 +29,9 @@ Returns: # 200 OK
 
 Returns: # 200 OK
 
-
+=======
 Regions
-_______
+=======
 
 * `GET /api/map/regions/`
 
@@ -42,8 +43,9 @@ _______
         "district": <int>
     }]
 
+===================
 PrefectureEmployees
-___________________
+===================
 
 * `GET /api/employees/prefecture_employees/`  # OPTIONAL `?include_approvers=true`
 
@@ -56,8 +58,9 @@ ___________________
         "patronymic": <str>
     }]
 
+=============
 MonthlyRating
--------------
+=============
 
 * `GET /api/ratings/monthly/`
 
@@ -130,8 +133,9 @@ MonthlyRating
         "id": <int>,  // rating id to load
     }
 
+====================
 MonthlyRatingElement
---------------------
+====================
 
 * `GET /api/ratings/monthly/elements/{id}/`  # OPTIONAL `?include_related=true`
 
@@ -222,8 +226,9 @@ Returns:
 
     {}
 
+=======================
 MonthlyRatingSubElement
------------------------
+=======================
 
 * `GET /api/ratings/monthly/sub_elements/{id}/`
 

@@ -202,18 +202,24 @@ BEST_TYPE_CHOICES = [
 
 
 class MonthlyRatingElement(models.Model):
-    monthly_rating = models.ForeignKey(MonthlyRating,
-                                       verbose_name=MonthlyRating._meta.verbose_name,
-                                       on_delete=models.PROTECT,
-                                       related_name='elements')
-    rating_element = models.ForeignKey(RatingElement,
-                                       verbose_name=RatingElement._meta.verbose_name,
-                                       on_delete=models.PROTECT, )
-    responsible = models.ForeignKey(PrefectureEmployee,
-                                    on_delete=models.SET_NULL,
-                                    null=True,
-                                    blank=True,
-                                    verbose_name='Ответственный')
+    monthly_rating = models.ForeignKey(
+        MonthlyRating,
+        verbose_name=MonthlyRating._meta.verbose_name,
+        on_delete=models.PROTECT,
+        related_name='elements'
+    )
+    rating_element = models.ForeignKey(
+        RatingElement,
+        verbose_name=RatingElement._meta.verbose_name,
+        on_delete=models.PROTECT,
+    )
+    responsible = models.ForeignKey(
+        PrefectureEmployee,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Ответственный'
+    )
     additional_description = models.TextField(
         verbose_name='Дополнительное описание',
         blank=True,
@@ -229,7 +235,7 @@ class MonthlyRatingElement(models.Model):
         blank=True,
         null=True
     )
-    best_type = models.SmallIntegerField(choices=BEST_TYPE_CHOICES)
+    best_type = models.SmallIntegerField(choices=BEST_TYPE_CHOICES, null=True)
 
     class Meta:
         verbose_name = 'Компонент месячного рейтинга'
@@ -240,23 +246,32 @@ class MonthlyRatingElement(models.Model):
         return self._meta.verbose_name + ' , id - {}'.format(self.id)
 
     @property
+    def values_cache_key(self):
+        return 'element_values_{}'.format(self.id)
+
+    @property
     def values(self) -> Dict:
-        regions_ids = Region.objects.values_list('id')
-        regions_dict = {region_id[0]: 0
-                        for region_id
-                        in regions_ids}
-        values_array = []
-        for sub_element in self.related_sub_elements.all():
-            values_array.append(sub_element.get_normalized_values())
-        for sub_element_dict in values_array:
-            for region_id, value in sub_element_dict.items():
-                regions_dict[region_id] += value
-        values_len = len(values_array)
-        if values_len != 0:
-            for region in regions_dict:
-                if regions_dict[region] is not None:
-                    regions_dict[region] /= values_len
-        return regions_dict
+        cached = cache.get(self.values_cache_key)
+        if cached:
+            return cached
+        else:
+            regions_ids = Region.objects.values_list('id')
+            regions_dict = {region_id[0]: 0
+                            for region_id
+                            in regions_ids}
+            values_array = []
+            for sub_element in self.related_sub_elements.all():
+                values_array.append(sub_element.get_normalized_values())
+            for sub_element_dict in values_array:
+                for region_id, value in sub_element_dict.items():
+                    regions_dict[region_id] += value
+            values_len = len(values_array)
+            if values_len != 0:
+                for region in regions_dict:
+                    if regions_dict[region] is not None:
+                        regions_dict[region] /= values_len
+            cache.set(self.values_cache_key, regions_dict)
+            return regions_dict
 
 
 class MonthlyRatingSubElement(models.Model):
@@ -326,8 +341,8 @@ class MonthlyRatingSubElement(models.Model):
                 [list(value)
                  for value
                  in self.values.values_list('region', 'is_average', 'value')]
-        avg_value = self.get_avg_value(extracted_values, 2)
-        min_value = self.get_min_value(extracted_values, 2)
+        avg_value = self.get_avg_value(extracted_values, 2) or 0
+        min_value = self.get_min_value(extracted_values, 2) or 0
         for value in extracted_values:
             if value[1]:
                 value[2] = avg_value
@@ -353,7 +368,7 @@ class MonthlyRatingSubElement(models.Model):
         return extracted_values
 
     def get_normalized_values(self) -> Dict:  # step 3
-        cached = False #cache.get(self.normalized_cache_key)
+        cached = cache.get(self.normalized_cache_key)
         if cached:
             return cached
         else:
@@ -377,7 +392,14 @@ class MonthlyRatingSubElement(models.Model):
         # TODO check if db query for comparing changing values and best type
         # can be faster then calculating this on each save
         cache.set(self.normalized_cache_key, self.get_normalized_values())
+        # removing parent element cache
+        cache.delete(self.monthly_rating_element.values_cache_key)
         super(MonthlyRatingSubElement, self).save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        cache.delete(self.normalized_cache_key)
+        cache.delete(self.monthly_rating_element.values_cache_key)
+        super(MonthlyRatingSubElement, self).delete(*args, **kwargs)
 
 
 class MonthlyRatingSubElementValue(models.Model):
