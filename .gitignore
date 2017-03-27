@@ -5,3 +5,4 @@ __pycache__
 settings_local.py
 static_root
 media
+*.xlsx
