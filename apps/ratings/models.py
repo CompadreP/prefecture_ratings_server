@@ -11,21 +11,23 @@ from apps.map.models import Region
 YEAR_CHOICES = [(r, r) for r in
                 range(2016, datetime.date.today().year + 2)]
 
-MONTH_CHOICES = [
-    (1, 'Январь'),
-    (2, 'Февраль'),
-    (3, 'Март'),
-    (4, 'Апрель'),
-    (5, 'Май'),
-    (6, 'Июнь'),
-    (7, 'Июль'),
-    (8, 'Август'),
-    (9, 'Сентябрь'),
-    (10, 'Октябрь'),
-    (11, 'Ноябрь'),
-    (12, 'Декабрь'),
-]
+MONTHS = {
+    1: 'Январь',
+    2: 'Февраль',
+    3: 'Март',
+    4: 'Апрель',
+    5: 'Май',
+    6: 'Июнь',
+    7: 'Июль',
+    8: 'Август',
+    9: 'Сентябрь',
+    10: 'Октябрь',
+    11: 'Ноябрь',
+    12: 'Декабрь',
+}
 
+
+MONTH_CHOICES = list(MONTHS.items())
 
 class SignerText(models.Model):
     text = models.TextField(verbose_name="Текст", unique=True)
