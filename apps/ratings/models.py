@@ -271,7 +271,7 @@ class MonthlyRatingElement(models.Model):
     best_type = models.SmallIntegerField(choices=BEST_TYPE_CHOICES, null=True)
 
     class Meta:
-        ordering = ('id', )
+        ordering = ('number', 'id',)
         verbose_name = 'Компонент месячного рейтинга'
         verbose_name_plural = 'Компоненты месячного рейтинга'
         unique_together = ('monthly_rating', 'rating_element')

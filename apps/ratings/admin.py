@@ -176,7 +176,8 @@ class MonthlyRatingElementInlineAdmin(admin.StackedInline):
 class MonthlyRatingAdmin(admin.ModelAdmin):
     inlines = [MonthlyRatingElementInlineAdmin]
     readonly_fields = ('is_negotiated', 'is_approved', 'approved_by',
-                       'year', 'month', )
+                       # 'year', 'month',
+                       )
     fieldsets = (
         ('Информация', {
             'fields': ('year', 'month', 'is_negotiated', 'is_approved',
@@ -188,8 +189,8 @@ class MonthlyRatingAdmin(admin.ModelAdmin):
     )
     actions = ['generate_elements']
 
-    def has_add_permission(self, request):
-        return False
+    # def has_add_permission(self, request):
+    #     return False
 
     def has_delete_permission(self, request, obj=None):
         return False
@@ -216,6 +217,7 @@ class MonthlyRatingAdmin(admin.ModelAdmin):
                         )
                     else:
                         MonthlyRatingElement.objects.create(
+                            number=created + 1,
                             monthly_rating=rating,
                             rating_element=rating_element,
                             responsible=rating_element.responsible
