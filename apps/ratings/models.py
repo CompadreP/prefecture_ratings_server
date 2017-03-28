@@ -86,6 +86,10 @@ class MonthlyRating(models.Model):
         verbose_name=SignerText._meta.verbose_name,
         on_delete=models.PROTECT
     )
+    generated_excel = models.FileField(
+        null=True,
+        blank=True
+    )
 
     class Meta:
         unique_together = ('year', 'month')

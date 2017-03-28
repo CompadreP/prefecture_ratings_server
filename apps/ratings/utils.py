@@ -1,3 +1,4 @@
+from django.conf import settings
 from typing import Dict
 
 from openpyxl import Workbook
@@ -7,20 +8,21 @@ from apps.ratings.models import MONTHS, MonthlyRating
 
 
 class MonthlyRatingExcelGenerator:
-
     def __init__(self, monthly_rating: MonthlyRating):
         self.monthly_rating = monthly_rating
         self.regions = Region.objects.all()
         self.wb = Workbook()
 
-    def save(self):
+    def generate(self):
         self.generate_main_sheet()
-        self.wb.save(
-            'Месячный_рейтинг_{}_{}.xlsx'.format(
-                self.monthly_rating.year,
-                self.monthly_rating.month,
-            )
+        file_name = '{}/Месячный_рейтинг_{}_{}.xlsx'.format(
+            settings.MEDIA_ROOT,
+            self.monthly_rating.year,
+            self.monthly_rating.month,
         )
+        self.wb.save(file_name)
+        self.monthly_rating.generated_excel = file_name
+        self.monthly_rating.save()
 
     def get_sum_values(self) -> Dict:
         sum_values = {}

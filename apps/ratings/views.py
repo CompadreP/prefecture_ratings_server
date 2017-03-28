@@ -1,9 +1,14 @@
+from wsgiref.util import FileWrapper
+
+from django.http.response import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import list_route, detail_route
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
 from apps.common.exceptions import InvalidDocumentEncoding
@@ -17,6 +22,7 @@ from apps.ratings.serializers import MonthlyRatingListSerializer, \
     MonthlyRatingElementSimpleSerializer, \
     MonthlyRatingSubElementRetrieveSerializer, \
     MonthlyRatingSubElementChangeSerializer
+from apps.ratings.utils import MonthlyRatingExcelGenerator
 
 
 class MonthlyRatingsViewSet(GenericViewSet,
@@ -150,3 +156,23 @@ class MonthlyRatingSubElementsViewSet(GenericViewSet,
         else:
             serializer_class = self.get_serializer_class()
         return serializer_class(*args, **kwargs)
+
+
+class DownloadRatingAPIView(APIView):
+    permission_classes = (AllowAny, )
+
+    @method_decorator(ensure_csrf_cookie)
+    def get(self, *args, **kwargs):
+        rating = MonthlyRating.objects.get(year=kwargs['year'],
+                                           month=kwargs['month'])
+        if not rating.generated_excel:
+            MonthlyRatingExcelGenerator(rating).generate()
+        rating.refresh_from_db()
+        response = HttpResponse(
+            FileWrapper(rating.generated_excel),
+            content_type='application/ms-excel'
+        )
+        response['Content-Disposition'] = \
+            'attachment; filename=Месячный_рейтинг_{}_{}.xlsx.zip'\
+            .format(rating.year, rating.month)
+        return response
