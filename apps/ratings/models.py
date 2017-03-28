@@ -5,8 +5,9 @@ from typing import List, Dict
 from django.db import models
 from django.core.cache import cache
 
-from apps.employees.models import PrefectureEmployee
+from apps.employees.models import PrefectureEmployee, RatingsUser
 from apps.map.models import Region
+from apps.ratings.tasks import send_emails
 
 YEAR_CHOICES = [(r, r) for r in
                 range(2016, datetime.date.today().year + 2)]
@@ -100,14 +101,40 @@ class MonthlyRating(models.Model):
     def __str__(self):
         return 'Год - {}, месяц - {}'.format(self.year, self.month)
 
+    negotiaied_subject = 'Рейтинг районов за {month} {year} года согласован.'
+    negotiaied_body = 'Ознакомиться с текущими результатами можно по ссылке - ' \
+                      '\n https://prefecture-ratings.ru/rating/{id}'
+
     def negotiate(self):
         self.is_negotiated = True
         self.save()
+        emails = [email[0] for email in RatingsUser.objects.filter(is_active=True).values_list('email')]
+        send_emails.apply_async(args=(
+            emails,
+            self.negotiaied_subject.format(
+                month=self.month,
+                year=self.year
+            ),
+            self.negotiaied_body.format(self.id)
+        ))
+
+    approved_subject = 'Рейтинг районов за {month} {year} года утвержден.'
+    approved_body = 'Ознакомиться с финальными результатами можно по ссылке - ' \
+                    '\n https://prefecture-ratings.ru/rating/{id}'
 
     def approve(self, user=None):
         # TODO on approve save to mongo fully serialized, generate excel and send emails
         self.is_approved = True
         self.save()
+        emails = [email[0] for email in RatingsUser.objects.filter(is_active=True).values_list('email')]
+        send_emails.apply_async(args=(
+            emails,
+            self.approved_subject.format(
+                month=self.month,
+                year=self.year
+            ),
+            self.approved_body.format(self.id)
+        ))
 
     def send_negotiation_emails(self):
         # TODO send emails

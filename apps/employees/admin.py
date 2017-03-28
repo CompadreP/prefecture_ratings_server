@@ -49,7 +49,7 @@ class EmployeeForm(forms.ModelForm):
                 body = ('Для вашего аккаунта был изменен адрес электронной почты.'
                         '\n\nЧтобы его подтвердить, перейдите по ссылке - {base_url}/password_set/{url_token} и установите новый пароль.'
                         '\n\nСсылка действительна в течении 24 часов.')
-                generate_token_and_send_email(email, subject, body)
+                generate_token_and_send_email.apply_async(args=(email, subject, body))
             if self.instance.user.is_active != is_active:
                 self.instance.user.is_active = is_active
                 changed = True
@@ -62,7 +62,7 @@ class EmployeeForm(forms.ModelForm):
             body = ('Для вас был создан аккаунт на сайте prefecture-ratings.ru.'
                     '\n\nЧтобы подтвердить свой email и установить пароль, перейдите по ссылке - {base_url}/password_set/{url_token}.'
                     '\n\nСсылка действительна в течении 24 часов.')
-            generate_token_and_send_email(email, subject, body)
+            generate_token_and_send_email.apply_async(args=(email, subject, body))
         return super(EmployeeForm, self).save(commit=commit)
 
 

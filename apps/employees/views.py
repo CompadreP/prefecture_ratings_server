@@ -150,7 +150,7 @@ class ResetPasswordRequestView(APIView):
                 '\n\nЧтобы сбросить пароль и установить новый, перейдите по ссылке '
                 '- {base_url}/password_set/{url_token}.'
                 '\n\nСсылка действительна в течении 24 часов.')
-        generate_token_and_send_email(email, subject, body)
+        generate_token_and_send_email.apply_async(args=(email, subject, body))
         return Response(status=status.HTTP_200_OK)
 
 

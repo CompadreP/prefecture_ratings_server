@@ -6,6 +6,8 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 from django.core import mail
 
+from apps.common.celery_app import app
+
 
 def generate_url_token(email: str):
     f = Fernet(settings.SECRET_FERNET_KEY)
@@ -14,7 +16,7 @@ def generate_url_token(email: str):
     return parse.quote(token.decode('utf-8'))
 
 
-# TODO celery task
+@app.task
 def generate_token_and_send_email(email: str, subject: str, body: str):
     url_token = generate_url_token(email)
     with mail.get_connection() as connection:

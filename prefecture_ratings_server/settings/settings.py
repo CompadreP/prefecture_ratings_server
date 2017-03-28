@@ -98,3 +98,18 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.JSONParser',
     )
 }
+
+CELERY_CONFIG = {
+    'broker_url': 'amqp://guest@localhost//',
+    'imports': (
+        'apps.ratings.tasks',
+        'apps.employees.tasks'
+    ),
+    'task_routes': {
+        'apps.*.tasks.*':
+            {
+                'queue': 'emails'
+            },
+    },
+    'timezone': 'UTC',
+},
