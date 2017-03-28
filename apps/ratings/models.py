@@ -121,7 +121,6 @@ class MonthlyRating(models.Model):
 class RatingElement(models.Model):
     WEIGHT_CHOICES = [(r, r) for r in
                       range(1, 11)]
-    number = models.PositiveIntegerField(verbose_name='№ п/п')
     base_document = models.ForeignKey(BaseDocument,
                                       verbose_name='Документ-основание')
     name = models.TextField(verbose_name='Наименование')
@@ -158,13 +157,13 @@ class RatingElement(models.Model):
         db_index=True)
 
     class Meta:
-        ordering = ('number',)
+        ordering = ('id', )
         verbose_name = 'Базовый компонент рейтинга'
         verbose_name_plural = 'Базовые компоненты рейтинга'
 
     def __str__(self):
         string = (self._meta.verbose_name
-                  + ' , id - {}, номер - {}'.format(self.id, self.number))
+                  + ' , id - {}'.format(self.id))
         if self.base_description:
             string += ', "{}"'.format(
                 self.base_description[:80] + '...' if len(
@@ -219,6 +218,7 @@ class MonthlyRatingElement(models.Model):
         verbose_name=RatingElement._meta.verbose_name,
         on_delete=models.PROTECT,
     )
+    number = models.PositiveIntegerField(verbose_name='№ п/п', null=True)
     responsible = models.ForeignKey(
         PrefectureEmployee,
         on_delete=models.SET_NULL,
@@ -244,12 +244,14 @@ class MonthlyRatingElement(models.Model):
     best_type = models.SmallIntegerField(choices=BEST_TYPE_CHOICES, null=True)
 
     class Meta:
+        ordering = ('id', )
         verbose_name = 'Компонент месячного рейтинга'
         verbose_name_plural = 'Компоненты месячного рейтинга'
         unique_together = ('monthly_rating', 'rating_element')
 
     def __str__(self):
-        return self._meta.verbose_name + ' , id - {}'.format(self.id)
+        return self._meta.verbose_name + \
+               ' , id - {}, номер - {}'.format(self.id, self.number)
 
     @property
     def values_cache_key(self):

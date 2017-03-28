@@ -109,7 +109,6 @@ class Command(BaseCommand):
             is_active=True
         )
         RatingElement.objects.create(
-            number=1,
             base_document=base_document,
             name='Результаты работы района по данным ОАТИ города Москвы.',
             base_description='Показатель формируется на основании еженедельных отчетов ОАТИ по количеству выявленных нарушений (зеленой инспекции, инспекции по благоустройству).',
@@ -118,7 +117,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=2,
             base_document=base_document,
             name='Результаты работы района по данным Мосжилинспекции.',
             base_description='На основании еженедельных отчетов ЖИ по САО указывается процент выявленных нарушений (количество МКД с нарушениями/общее количество МКД в районе).',
@@ -127,7 +125,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=3,
             base_document=base_document,
             name='Исполнительская дисциплина.',
             base_description='Показатель формируется на основании ежемесячного отчета по возвращенным на доработку документам в управы районов в Системе ЭДО.',
@@ -136,7 +133,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=4,
             base_document=base_document,
             name='Телеметрический контроль за работой коммунальной техники.',
             base_description='Отчет о посещении коммунально-уборочной техникой площади проезжей части, тротуаров ОДХ и ДТ и выполнение технологических операций в соответствии с факсограммами КГХ по данным портала monitor.mos.ru.',
@@ -145,7 +141,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=5,
             base_document=base_document,
             name='Санитарное и техническое состояние коммунальной техники и средств малой механизации ГБУ "Жилищник" районов.',
             base_description='Количество техники находящейся в ремонте, не пройденного ТО и ГТО на основании проверок и информации представляемой ГБУ "Доринвест".',
@@ -154,7 +149,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=6,
             base_document=base_document,
             name='Ремонт подъездов.',
             base_description='Показатель формируется по еженедельным отчетам МЖИ по различным показателям.',
@@ -163,7 +157,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=7,
             base_document=base_document,
             name='Выполнение программы благоустройства дворовых и иных территорий.',
             base_description='Внесение данных по программам благоустройства в ИАС МКР.',
@@ -172,7 +165,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=8,
             base_document=base_document,
             name='Подготовка  жилого фонда и прочих строений к эксплуатации в зимних\летних условиях.',
             base_description='Подготовка жилого фонда и прочих строений к ОЗП.',
@@ -181,7 +173,6 @@ class Command(BaseCommand):
             valid_from_year=2017,
         )
         RatingElement.objects.create(
-            number=9,
             base_document=base_document,
             name='Работа с бытовыми, крупногабаритными отходами и БРТС.',
             base_description='Показатели формируются на основании предоставляемых актов по обследованию БРТС за отчетный период, подтверждающих представляемые ранее сведения о проводимой с БРТС работе.',
@@ -190,7 +181,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=10,
             base_document=base_document,
             name='Выполнение региональной программы капитального ремонта.',
             base_description='Снижение балла основывается на количестве МКД и нежилых объектов в районе, взнос оплаты по которым не выполнен на 100%. Снижение балла основывается на количестве исходно-разрешительной документации (ИРД) по району, количество сдачи которых не выполнено на 100%.',
@@ -199,7 +189,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=11,
             base_document=base_document,
             name='Работа с кадрами ГБУ "Жилищник" районов, включая показатель набора численности по данным АИС «Бюджетный учет».',
             base_description='Показатель формируется по данным из аналитического портала Облачной бухгалтерии.',
@@ -208,7 +197,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=12,
             base_document=base_document,
             name='Задолженность населения и валовый сбор платежей за коммунальные услуги.',
             base_description='Показатель формируется по еженедельным отчетам ГКУ "Дирекция ЖКХиБ САО" в рамках подготовки к тепловой комиссии на основании базы АСУ ЕИРЦ.',
@@ -217,7 +205,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=13,
             base_document=base_document,
             name='Задолженность управляющих, эксплуатирующих и подведомственных организаций перед поставщиками услуг и ресурсов.',
             base_description='Данный показатель взят на основании еженедельных отчетов АО "Мосводоканал", АО "Мосгаз", ПАО "Мосэнергосбыт", ПАО МОЭК и лифтовых компаний и формируется отдельно по ГБУ и частным УО.',
@@ -226,7 +213,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=14,
             base_document=base_document,
             name='Санитарное и техническое состояние жилых домов, административных зданий и сооружений (инженерные системы МКД, работа ОДС, лифтовое оборудование и другие системы).',
             base_description='Исходные данные для расчета рейтинга, в части работы ОДС и представления отчетов по неисправностям  лифтового оборудования и очистке кровель, основываются на:\n1) Своевременном представлении отчетов (согласно факсограмме №6-7-139/7, № 6-7-5125/6, 6-7-310/7, 6-7-274/7;\n2) Проверок ОДС;\n3) Представлении районами необходимых материалов устранения нарушений, выявленных при проверке ОДС.',
@@ -235,7 +221,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=15,
             base_document=base_document,
             name='Проведение общих собраний собственников помещений МКД и качество оформления протоколов, а также проведения конкурсов по выбору управляющих организаций.',
             base_description='Проведение собраний с жителями жилых домов в районах округа.',
@@ -244,7 +229,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=16,
             base_document=base_document,
             name='Санитарное и техническое состояние территории округа и объектов инфраструктуры.',
             base_description='Показатель формируется на основании еженедельных отчетов СМЦ САО.',
@@ -253,7 +237,6 @@ class Command(BaseCommand):
             valid_from_year=2016,
         )
         RatingElement.objects.create(
-            number=17,
             base_document=base_document,
             name='Санитарное и техническое состояние бытовых городков и баз хранения, а также других строений и территорий, находящихся на балансе ГБУ "Жилищник" районов.',
             weight=10,
@@ -268,8 +251,9 @@ class Command(BaseCommand):
             month=2,
             signer_text=signer_text
         )
-        for element in RatingElement.objects.all():
+        for idx, element in enumerate(RatingElement.objects.all()):
             MonthlyRatingElement.objects.create(
+                number=idx + 1,
                 monthly_rating=rating,
                 rating_element=element
             )

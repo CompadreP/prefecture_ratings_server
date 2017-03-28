@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from django.db import transaction
 from django.urls import reverse
-from django.db.models import Q
 from django.utils.safestring import mark_safe
 
 from apps.ratings.models import RatingElement, BaseDocument, SignerText, \
@@ -65,13 +64,13 @@ class RatingElementForm(forms.ModelForm):
 
         # periods intersection
         intersect_message = 'Нельзя создавать базовый компонент рейтинга' \
-                            ' с таким же номером или наименованием, как и у ' \
+                            ' с таким же наименованием, как и у ' \
                             'существующего и пересекающимися сроками действия.'
 
         if not self.instance.id:
             if valid_to_year and valid_to_month:
                 if (RatingElement.objects
-                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
+                        .filter(name=self.cleaned_data['name'].strip())
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
                         .filter(valid_to_year__gte=valid_from_year)
@@ -79,7 +78,7 @@ class RatingElementForm(forms.ModelForm):
                         .exists()):
                     raise ValidationError(intersect_message)
                 if (RatingElement.objects
-                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
+                        .filter(name=self.cleaned_data['name'].strip())
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
                         .filter(valid_to_year=None)
@@ -88,13 +87,13 @@ class RatingElementForm(forms.ModelForm):
                     raise ValidationError(intersect_message)
             else:
                 if (RatingElement.objects
-                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
+                        .filter(name=self.cleaned_data['name'].strip())
                         .filter(valid_to_year=None)
                         .filter(valid_to_month=None)
                         .exists()):
                     raise ValidationError(intersect_message)
                 elif (RatingElement.objects
-                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
+                        .filter(name=self.cleaned_data['name'].strip())
                         .filter(valid_from_year__lte=valid_from_year)
                         .filter(valid_from_month__lte=valid_from_year)
                         .filter(valid_to_year__gte=valid_from_year)
@@ -105,7 +104,7 @@ class RatingElementForm(forms.ModelForm):
             if valid_to_year and valid_to_month:
                 if (RatingElement.objects
                         .exclude(pk=self.instance.id)
-                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
+                        .filter(name=self.cleaned_data['name'].strip())
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
                         .filter(valid_to_year__gte=valid_from_year)
@@ -114,7 +113,7 @@ class RatingElementForm(forms.ModelForm):
                     raise ValidationError(intersect_message)
                 if (RatingElement.objects
                         .exclude(pk=self.instance.id)
-                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
+                        .filter(name=self.cleaned_data['name'].strip())
                         .filter(valid_from_year__lte=valid_to_year)
                         .filter(valid_from_month__lte=valid_to_month)
                         .filter(valid_to_year=None)
@@ -124,14 +123,14 @@ class RatingElementForm(forms.ModelForm):
             else:
                 if (RatingElement.objects
                         .exclude(pk=self.instance.id)
-                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
+                        .filter(name=self.cleaned_data['name'].strip())
                         .filter(valid_to_year=None)
                         .filter(valid_to_month=None)
                         .exists()):
                     raise ValidationError(intersect_message)
                 elif (RatingElement.objects
                         .exclude(pk=self.instance.id)
-                        .filter(Q(number=self.cleaned_data['number']) | Q(name=self.cleaned_data['name'].strip()))
+                        .filter(name=self.cleaned_data['name'].strip())
                         .filter(valid_from_year__lte=valid_from_year)
                         .filter(valid_from_month__lte=valid_from_year)
                         .filter(valid_to_year__gte=valid_from_year)
@@ -142,7 +141,7 @@ class RatingElementForm(forms.ModelForm):
 
 class RatingElementAdmin(admin.ModelAdmin):
     form = RatingElementForm
-    list_display = ('id', 'is_active', 'number', 'name', 'responsible',
+    list_display = ('id', 'is_active', 'name', 'responsible',
                     'base_document', 'valid_from_month', 'valid_from_year',
                     'valid_to_month', 'valid_to_year', )
 
@@ -158,9 +157,9 @@ class MonthlyRatingElementInlineAdmin(admin.StackedInline):
     model = MonthlyRatingElement
     readonly_fields = ('negotiator_comment', 'rating_element',
                        'region_comment', 'rating_element_url')
-    fields = ('rating_element_url', 'responsible', 'additional_description',
-              'negotiator_comment', 'region_comment')
-    ordering = ('rating_element__number', )
+    fields = ('rating_element_url', 'number', 'responsible',
+              'additional_description', 'negotiator_comment', 'region_comment')
+    ordering = ('id', )
 
     def rating_element_url(self, obj):
         return mark_safe('<a href="{}">{}</a>'.format(

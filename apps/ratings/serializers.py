@@ -33,8 +33,7 @@ class RatingElementSerializer(DynamicFieldsModelSerializer):
 
     class Meta:
         model = RatingElement
-        fields = ('id', 'number', 'base_document', 'name', 'base_description',
-                  'weight', )
+        fields = ('id', 'base_document', 'name', 'base_description', 'weight', )
 
 
 class MonthlyRatingElementSimpleSerializer(DynamicFieldsModelSerializer):
@@ -49,7 +48,7 @@ class MonthlyRatingElementSimpleSerializer(DynamicFieldsModelSerializer):
 
     class Meta:
         model = MonthlyRatingElement
-        fields = ('id', 'rating_element', 'responsible',
+        fields = ('id', 'rating_element', 'number', 'responsible',
                   'additional_description', 'negotiator_comment',
                   'region_comment', 'best_type', 'values')
 
@@ -91,8 +90,8 @@ class MonthlyRatingElementDetailFullSerializer(DynamicFieldsModelSerializer):
 
     class Meta:
         model = MonthlyRatingElement
-        fields = ('id', 'monthly_rating', 'rating_element', 'responsible',
-                  'values', 'related_sub_elements', 'best_type')
+        fields = ('id', 'monthly_rating', 'rating_element', 'number',
+                  'responsible', 'values', 'related_sub_elements', 'best_type')
 
 
 class MonthlyRatingSubElementBaseSerializer(DynamicFieldsModelSerializer):
