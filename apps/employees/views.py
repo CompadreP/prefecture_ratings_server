@@ -131,7 +131,7 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class ResetPasswordRequestView(APIView):
+class ResetPasswordRequestAPIView(APIView):
 
     # TODO throttling
     @method_decorator(csrf_protect)

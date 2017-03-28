@@ -112,4 +112,4 @@ CELERY_CONFIG = {
             },
     },
     'timezone': 'UTC',
-},
+}

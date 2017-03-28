@@ -2,7 +2,7 @@ from django.conf.urls import url
 from rest_framework.routers import DefaultRouter
 
 from apps.employees.views import PasswordSetView, PasswordSetSuccess, \
-    LoginView, LogoutView, PasswordResetView, ResetPasswordRequestView, \
+    LoginView, LogoutView, PasswordResetView, ResetPasswordRequestAPIView, \
     PrefectureEmployeesViewSet
 
 password_set_urlpatterns = [
@@ -29,7 +29,7 @@ authentication_urlpatterns = [
         LogoutView.as_view(),
         name='api_logout'),
     url(r'^reset_password',
-        ResetPasswordRequestView.as_view(),
+        ResetPasswordRequestAPIView.as_view(),
         name='api_reset_password_request'),
 ]
 
