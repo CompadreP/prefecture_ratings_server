@@ -37,10 +37,9 @@ urlpatterns = [
     url(r'^api/map/', include('apps.map.urls')),
     url(r'^api/employees/', include(employees_urlpatterns)),
     url(r'^api/auth/', include(authentication_urlpatterns)),
-    url(r'^$', main_page, name='main_page'),
     url(r'^admin/', admin.site.urls),
     url(r'^password_set/', include(password_set_urlpatterns)),
-    url(r'^forgot_password/', include(password_reset_urlpatterns)),
+    url(r'^password_reset/', include(password_reset_urlpatterns)),
 ]
 
 if settings.DEBUG:
