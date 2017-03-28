@@ -426,15 +426,15 @@ class MonthlyRatingSubElement(models.Model):
     def save(self, *args, **kwargs):
         # TODO check if db query for comparing changing values and best type
         # can be faster then calculating this on each save
+        super(MonthlyRatingSubElement, self).save(*args, **kwargs)
         cache.set(self.normalized_cache_key, self.get_normalized_values())
         # removing parent element cache
         cache.delete(self.monthly_rating_element.values_cache_key)
-        super(MonthlyRatingSubElement, self).save(*args, **kwargs)
 
     def delete(self, *args, **kwargs):
+        super(MonthlyRatingSubElement, self).delete(*args, **kwargs)
         cache.delete(self.normalized_cache_key)
         cache.delete(self.monthly_rating_element.values_cache_key)
-        super(MonthlyRatingSubElement, self).delete(*args, **kwargs)
 
 
 class MonthlyRatingSubElementValue(models.Model):
