@@ -100,7 +100,7 @@ REST_FRAMEWORK = {
 }
 
 CELERY_CONFIG = {
-    'broker_url': 'amqp://guest@localhost//',
+    'broker_url': 'amqp://guest@127.0.0.1//',
     'imports': (
         'apps.ratings.tasks',
         'apps.employees.tasks'
