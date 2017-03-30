@@ -84,6 +84,9 @@ class PasswordResetView(PasswordSetView):
         if is_verification_token_expired(parsed_datetime):
             return expired_response(request)
         else:
+            if not RatingsUser.objects.filter(email=email).exists():
+                return Response(data={'detail': 'no_such_user'},
+                                status=status.HTTP_400_BAD_REQUEST)
             RatingsUser.objects.get(email=email).set_unusable_password()
             return super(PasswordSetView, self).get(request, *args, **kwargs)
 
