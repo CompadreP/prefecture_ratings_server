@@ -44,8 +44,8 @@ number_format_1 = '0.0'
 number_format_2 = '0.00'
 number_format_percent = '0.00%'
 
-light_blue_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(94)[2:], hex(156)[2:], hex(211)[2:]))
-blue_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(221)[2:], hex(235)[2:], hex(246)[2:]))
+light_blue_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(221)[2:], hex(235)[2:], hex(246)[2:]))
+blue_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(94)[2:], hex(156)[2:], hex(211)[2:]))
 light_gray_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(217)[2:], hex(217)[2:], hex(217)[2:]))
 light_green_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(199)[2:], hex(223)[2:], hex(182)[2:]))
 red_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(255)[2:], hex(50)[2:], hex(50)[2:]))
@@ -287,6 +287,7 @@ class MonthlyRatingExcelGenerator:
             cell.value = table_headers_values_1[idx]
             cell.alignment = center_align_wrap
             cell.border = medium_border
+            cell.fill = blue_fill
             cell.font = table_header_font
 
         table_headers_cells_2 = [sheet.cell(row=4, column=idx + 1)
