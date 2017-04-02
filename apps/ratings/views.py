@@ -1,5 +1,4 @@
 import datetime
-from wsgiref.util import FileWrapper
 
 from django.http.response import HttpResponse
 from django.utils.decorators import method_decorator
@@ -52,6 +51,7 @@ class MonthlyRatingsViewSet(GenericViewSet,
                                 status=status.HTTP_400_BAD_REQUEST)
             else:
                 rating.approve()
+
         return Response(status=status.HTTP_200_OK)
 
     @list_route(methods=['get'])

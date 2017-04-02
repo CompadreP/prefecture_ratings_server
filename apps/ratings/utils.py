@@ -590,3 +590,7 @@ class MonthlyRatingExcelGenerator:
                     sub_element.document.name[sub_element.document.name.rfind('/') + 1:]
                 )
             column_offset += 1
+
+
+def invalidate_monthly_rating_caches(monthly_rating_id: int):
+    pass

@@ -100,6 +100,10 @@ class MonthlyRating(models.Model):
     def __str__(self):
         return 'Год - {}, месяц - {}'.format(self.year, self.month)
 
+    @staticmethod
+    def cache_key_prefix():
+        return 'monthly_rating_'
+
     negotiaied_subject = 'Рейтинг районов за {month} {year} года согласован.'
     negotiaied_body = 'Ознакомиться с текущими результатами можно по ссылке - ' \
                       '\n https://prefecture-ratings.ru/rating/{id}'
@@ -134,14 +138,6 @@ class MonthlyRating(models.Model):
             ),
             self.approved_body.format(self.id)
         ))
-
-    def send_negotiation_emails(self):
-        # TODO send emails
-        pass
-
-    def send_approved_emails(self):
-        # mass mail
-        pass
 
 
 class RatingElement(models.Model):
@@ -278,6 +274,10 @@ class MonthlyRatingElement(models.Model):
     def __str__(self):
         return self._meta.verbose_name + \
                ' , id - {}, номер - {}'.format(self.id, self.number)
+
+    @staticmethod
+    def cache_key_prefix():
+        return 'monthly_rating_element_'
 
     @property
     def values(self) -> Dict:
