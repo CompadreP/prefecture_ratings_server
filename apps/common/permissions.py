@@ -24,19 +24,20 @@ class MonthlyRatingElementPermission(BasePermission):
             if request.user.is_anonymous:
                 return False
             if request.method == 'PATCH':
-                if 'additional_description' in request.data:
-                    if Group.objects.get(name='prefecture') in request.user.groups.all():
-                        return request.user.prefectureemployee == obj.responsible
+                request_data_len = len(request.data)
                 if 'responsible' in request.data:
-                    return request.user.is_admin
+                    return request.user.is_admin and request_data_len == 1
                 if 'negotiator_comment' in request.data:
                     if Group.objects.get(name='prefecture') in request.user.groups.all():
-                        return request.user.prefectureemployee.can_approve_rating
+                        return request.user.prefectureemployee.can_approve_rating and request_data_len == 1
                     else:
                         return False
+                if 'additional_description' in request.data:
+                    if Group.objects.get(name='prefecture') in request.user.groups.all():
+                        return request.user.prefectureemployee == obj.responsible and request_data_len == 1
                 if 'region_comment' in request.data:
                     if Group.objects.get(name='prefecture') in request.user.groups.all():
-                        return request.user.prefectureemployee == obj.responsible
+                        return request.user.prefectureemployee == obj.responsible and request_data_len == 1
                     else:
                         return False
             else:
