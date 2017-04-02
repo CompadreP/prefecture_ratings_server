@@ -25,7 +25,8 @@ class MonthlyRatingElementPermission(BasePermission):
                 return False
             if request.method == 'PATCH':
                 if 'additional_description' in request.data:
-                    return request.user.is_admin
+                    if Group.objects.get(name='prefecture') in request.user.groups.all():
+                        return request.user.prefectureemployee == obj.responsible
                 if 'responsible' in request.data:
                     return request.user.is_admin
                 if 'negotiator_comment' in request.data:
@@ -38,37 +39,9 @@ class MonthlyRatingElementPermission(BasePermission):
                         return request.user.prefectureemployee == obj.responsible
                     else:
                         return False
+            else:
+                return False
         return False
-
-
-# class AdminOnlyPermission(BasePermission):
-#     def has_permission(self, request, view):
-#         if request.user.is_admin:
-#             return True
-#         else:
-#             return False
-#
-#
-# class NegotiatorOnlyPermission(BasePermission):
-#     def has_object_permission(self, request, view, obj):
-#         if PrefectureEmployee.objects.filter(user=request.user.id).exists():
-#             if request.user.prefectureemployee.can_approve_rating:
-#                 return True
-#             else:
-#                 return False
-#         else:
-#             return False
-#
-#
-# class ResponsibleOnlyPermission(BasePermission):
-#     def has_object_permission(self, request, view, obj):
-#         if PrefectureEmployee.objects.filter(user=request.user.id).exists():
-#             if request.user.prefectureemployee == obj.responsible:
-#                 return True
-#             else:
-#                 return False
-#         else:
-#             return False
 
 
 class SubElementPermission(BasePermission):
