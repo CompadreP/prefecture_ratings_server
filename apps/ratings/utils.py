@@ -583,9 +583,10 @@ class MonthlyRatingExcelGenerator:
             cell.alignment = halign_left_valign_center_wrap
             cell.font = hyperlink_font
             if sub_element.document:
-                cell.value = '=HYPERLINK("{}/{}", "{}")'.format(
+                cell.value = '=HYPERLINK("{}/{}{}", "{}")'.format(
                     settings.BASE_URL,
-                    quote_plus(str(sub_element.document)),
+                    settings.MEDIA_URL,
+                    str(sub_element.document),
                     sub_element.document.name[sub_element.document.name.rfind('/') + 1:]
                 )
             column_offset += 1
