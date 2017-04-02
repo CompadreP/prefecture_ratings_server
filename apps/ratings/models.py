@@ -282,7 +282,7 @@ class MonthlyRatingElement(models.Model):
     @property
     def values(self) -> Dict:
         regions_ids = Region.objects.values_list('id')
-        regions_dict = {region_id[0]: 0
+        regions_dict = {region_id[0]: None
                         for region_id
                         in regions_ids}
         values_array = []
@@ -290,7 +290,10 @@ class MonthlyRatingElement(models.Model):
             values_array.append(sub_element.get_normalized_values())
         for sub_element_dict in values_array:
             for region_id, value in sub_element_dict.items():
-                regions_dict[region_id] += value
+                if regions_dict[region_id] is not None and value is not None:
+                    regions_dict[region_id] += value
+                elif regions_dict[region_id] is None and value is not None:
+                    regions_dict[region_id] = value
         values_len = len(values_array)
         if values_len != 0:
             for region in regions_dict:
@@ -343,12 +346,13 @@ class MonthlyRatingSubElement(models.Model):
         return min_value
 
     def get_avg_value(self, lst: List, idx: int) -> float:
-        sum_value = 0
-        for value in lst:
-            if value[idx] is not None:
-                sum_value += value[idx]
-        list_len = len(lst)
-        return sum_value / len(lst) if list_len else None
+        lst = [x for x in lst if x[idx] is not None]
+        if lst:
+            sum_value = 0
+            for value in lst:
+                if value[idx] is not None:
+                    sum_value += value[idx]
+            return sum_value / len(lst)
 
     def get_max_value(self, lst: List, idx) -> float:
         max_value = None
@@ -368,9 +372,7 @@ class MonthlyRatingSubElement(models.Model):
         for value in extracted_values:
             if value[1]:
                 value[2] = avg_value
-            if value[2] is None:
-                value[2] = 0
-            if min_value < 0:
+            if value[2] is not None and min_value < 0:
                 value[2] += abs(min_value)
             del value[1]
         return extracted_values
@@ -381,12 +383,14 @@ class MonthlyRatingSubElement(models.Model):
             min_value = self.get_min_value(extracted_values, 1)
             if min_value != 0:
                 for value in extracted_values:
-                    value[1] /= min_value
+                    if value[1] is not None:
+                        value[1] /= min_value
         elif self.best_type == 2:
             max_value = self.get_max_value(extracted_values, 1)
             if max_value != 0:
                 for value in extracted_values:
-                    value[1] /= max_value
+                    if value[1] is not None:
+                        value[1] /= max_value
         return extracted_values
 
     def get_normalized_values(self) -> Dict:  # step 3
@@ -396,9 +400,9 @@ class MonthlyRatingSubElement(models.Model):
         for value in extracted_values:
             if min_value == max_value:
                 value[1] = 1
-            elif self.best_type == 1:
+            elif self.best_type == 1 and value[1] is not None:
                 value[1] = (value[1] - max_value) / (min_value - max_value)
-            elif self.best_type == 2:
+            elif self.best_type == 2 and value[1] is not None:
                 value[1] = (value[1] - min_value) / (max_value - min_value)
         normalized_values = {value[0]: value[1]
                              for value

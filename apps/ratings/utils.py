@@ -49,6 +49,64 @@ blue_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(94)[2:], hex(156)[2
 light_gray_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(217)[2:], hex(217)[2:], hex(217)[2:]))
 light_green_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(199)[2:], hex(223)[2:], hex(182)[2:]))
 red_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(255)[2:], hex(50)[2:], hex(50)[2:]))
+green_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(50)[2:], hex(255)[2:], hex(50)[2:]))
+
+hex_0 = format(0, '02x')
+hex_60 = format(60, '02x')
+hex_120 = format(120, '02x')
+hex_220 = format(220, '02x')
+
+
+def get_color_fill(value: float, min_val: float, max_val: float, type: int) -> PatternFill:
+    if value is not None:
+        result = None
+        if min_val == max_val:
+            result = PatternFill("solid", fgColor='{}{}{}'.format(hex_0, hex_220, hex_120))
+        else:
+            new_max = max_val - min_val
+            new_val = value - min_val
+            if new_max != 0:
+                multiplexer = 1 / abs(new_max)
+            else:
+                multiplexer = 1
+            if multiplexer != 1:
+                new_val *= multiplexer
+            # print(value, new_max, min_val, max_val)
+            if type == 1:
+                if new_val <= 0.5:
+                    result = PatternFill(
+                        "solid",
+                        fgColor='{}{}{}'.format(
+                            format(int(new_val * 2 * 220), '02x'),
+                            hex_220,
+                            hex_60)
+                    )
+                else:
+                    result = PatternFill(
+                        "solid",
+                        fgColor='{}{}{}'.format(
+                            hex_220,
+                            format(int((1 - new_val) * 2 * 220), '02x'),
+                            hex_60)
+                    )
+            elif type == 2:
+                if new_val <= 0.5:
+                    result = PatternFill(
+                        "solid",
+                        fgColor='{}{}{}'.format(
+                            hex_220,
+                            format(int(new_val * 2 * 220), '02x'),
+                            hex_60)
+                    )
+                else:
+                    result = PatternFill(
+                        "solid",
+                        fgColor='{}{}{}'.format(
+                            format(int((1 - new_val) * 2 * 220), '02x'),
+                            hex_220,
+                            hex_60)
+                    )
+        return result
 
 
 class MonthlyRatingExcelGenerator:
@@ -64,6 +122,8 @@ class MonthlyRatingExcelGenerator:
         for element in self.rating_elements:
             weighted_values = {
                 value: self.rating_elements_values[element.id][value] * element.rating_element.weight
+                       if self.rating_elements_values[element.id][value] is not None
+                       else None
                 for value in element.values
             }
             self.rating_elements_weighted_values[element.id] = weighted_values
@@ -92,17 +152,20 @@ class MonthlyRatingExcelGenerator:
                     'O', 'P', 'Q', 'R']:
             sheet.column_dimensions[col].width = 7
 
-        sheet.column_dimensions['S'].width = 15
+        sheet.column_dimensions['S'].width = 10
         sheet.column_dimensions['T'].width = 35
         sheet.column_dimensions['U'].width = 30
         sheet.column_dimensions['V'].width = 30
 
+        row_offset = 1
         # Main header
-        cell = sheet.cell(row=1, column=20)
+        cell = sheet.cell(row=row_offset, column=20)
         cell.value = self.monthly_rating.signer_text.text
         cell.font = table_header_font
         cell.alignment = center_align_wrap
-        cell = sheet.cell(row=2, column=1)
+        row_offset += 1
+
+        cell = sheet.cell(row=row_offset, column=1)
         cell.value = \
             'Исходные данные для расчета рейтинга управ районов САО ' \
             'в части показателей ЖКХ за {month} {year} года в соответствии с ' \
@@ -115,9 +178,26 @@ class MonthlyRatingExcelGenerator:
         cell.alignment = center_align_wrap
         cell.fill = light_blue_fill
         sheet.merge_cells('A2:T2')
+        row_offset += 2
+
+        sum_values = self.get_sum_values()
+        regions_places = self.get_regions_places(sum_values)
+        column_offset = 2
+        cell = sheet.cell(row=row_offset, column=column_offset)
+        cell.value = 'место'
+        cell.alignment = center_align
+        cell.font = table_header_font
+        column_offset += 1
+
+        for idx, region in enumerate(self.regions):
+            cell = sheet.cell(row=row_offset, column=column_offset + idx)
+            cell.value = regions_places[region.id] if region.id in regions_places else None
+            cell.alignment = center_align
+            cell.font = table_header_font
+        row_offset += 1
 
         # Table headers
-        table_headers_cells_1 = [sheet.cell(row=5, column=idx + 1)
+        table_headers_cells_1 = [sheet.cell(row=row_offset, column=idx + 1)
                                  for idx in range(22)]
         table_headers_values_1 = [
             'Наименование показателей',
@@ -135,8 +215,9 @@ class MonthlyRatingExcelGenerator:
             cell.alignment = center_align_wrap
             cell.border = medium_border
             cell.font = table_header_font
+        row_offset += 1
 
-        table_headers_cells_2 = [sheet.cell(row=6, column=idx + 1)
+        table_headers_cells_2 = [sheet.cell(row=row_offset, column=idx + 1)
                                  for idx in range(22)]
         table_headers_cells_2[0].value = 'Суммарный показатель'
         for idx, cell in enumerate(table_headers_cells_2):
@@ -145,14 +226,17 @@ class MonthlyRatingExcelGenerator:
             cell.font = table_header_font
             cell.number_format = number_format_1
 
-        sum_values = self.get_sum_values()
-
-        for idx, region in enumerate(self.regions):
-            table_headers_cells_2[idx + 2].value = sum_values[region.id]
         if sum_values:
-            table_headers_cells_2[18].value = sum([val[1] for val in sum_values.items()]) / len(sum_values)
+            min_sum_value = min([v for k, v in sum_values.items() if v is not None])
+            max_sum_value = max([v for k, v in sum_values.items() if v is not None])
+            for idx, region in enumerate(self.regions):
+                if sum_values[region.id] is not None:
+                    table_headers_cells_2[idx + 2].value = sum_values[region.id]
+                    table_headers_cells_2[idx + 2].fill = get_color_fill(sum_values[region.id], min_sum_value, max_sum_value, 2)
+                    table_headers_cells_2[18].value = sum([val[1] for val in sum_values.items() if val[1] is not None]) / len(sum_values)
+        row_offset += 1
 
-        table_headers_cells_3 = [sheet.cell(row=7, column=idx + 1)
+        table_headers_cells_3 = [sheet.cell(row=row_offset, column=idx + 1)
                                  for idx in range(22)]
         table_headers_cells_3[0].value = 'Максимально возможный\nсуммарный показатель'
         max_possible_value = self.get_max_possible_value()
@@ -163,48 +247,66 @@ class MonthlyRatingExcelGenerator:
             cell.border = medium_border
             cell.font = table_header_font
             cell.number_format = number_format_1
-
-        row_offset = 8
+        row_offset += 1
 
         for idx, element in enumerate(self.rating_elements):
+            column_offset = 1
             cell = sheet.cell(
                 row=idx + row_offset,
-                column=1,
+                column=column_offset,
                 value='{}) {}'.format(idx + 1, element.rating_element.name)
             )
             cell.border = thin_border
             cell.alignment = halign_left_valign_center_wrap
+            column_offset += 1
+
             cell = sheet.cell(
                 row=idx + row_offset,
-                column=2,
+                column=column_offset,
                 value=element.responsible.short_name if element.responsible else ''
             )
             cell.border = thin_border
             cell.alignment = center_align
-            column_offset = 3
+            column_offset += 1
+
+            vals_list = [float(v)
+                         for k, v in self.rating_elements_values[element.id].items()
+                         if v is not None]
+
+            if vals_list:
+                min_sum_value = float(min(vals_list)) * element.rating_element.weight
+                max_sum_value = float(max(vals_list)) * element.rating_element.weight
+
             for region in self.regions:
                 cell = sheet.cell(
                     row=idx + row_offset,
                     column=column_offset,
                 )
-                cell.value = self.rating_elements_weighted_values[element.id][region.id]
+                val = self.rating_elements_weighted_values[element.id][region.id]
+                cell.value = val
                 cell.border = thin_border
                 cell.alignment = center_align
                 cell.number_format = number_format_1
+                if val is not None:
+                    cell.fill = get_color_fill(float(val), min_sum_value, max_sum_value, 2)
                 column_offset += 1
-            vals_list = [v for k, v in self.rating_elements_values[element.id].items()]
+
+            cell_val = None
             if vals_list:
-                cell = sheet.cell(
-                    row=idx + row_offset,
-                    column=19,
-                    value=(sum(vals_list)/len(vals_list)) * element.rating_element.weight
-                )
-                cell.border = thin_border
-                cell.alignment = center_align
-                cell.number_format = number_format_1
+                cell_val = (sum(vals_list)/len(vals_list)) * element.rating_element.weight
             cell = sheet.cell(
                 row=idx + row_offset,
-                column=20,
+                column=column_offset,
+                value=cell_val
+            )
+            cell.border = thin_border
+            cell.alignment = center_align
+            cell.number_format = number_format_1
+            column_offset += 1
+
+            cell = sheet.cell(
+                row=idx + row_offset,
+                column=column_offset,
             )
             val = element.rating_element.base_description if element.rating_element.base_description else ''
             val += element.additional_description if element.additional_description else ''
@@ -212,28 +314,42 @@ class MonthlyRatingExcelGenerator:
             cell.border = thin_border
             cell.alignment = halign_left_valign_center_wrap
             cell.fill = light_blue_fill
+            column_offset += 1
+
             cell = sheet.cell(
                 row=idx + row_offset,
-                column=21,
+                column=column_offset,
                 value=element.negotiator_comment
             )
             cell.border = thin_border
             cell.alignment = halign_left_valign_center_wrap
             cell.fill = red_fill
+            column_offset += 1
+
             cell = sheet.cell(
                 row=idx + row_offset,
-                column=22,
+                column=column_offset,
                 value=element.region_comment
             )
             cell.border = thin_border
             cell.alignment = center_align_wrap
 
-    def get_sum_values(self) -> Dict:
-        sum_values = {region.id: 0 for region in self.regions}
+    def get_sum_values(self) -> dict:
+        sum_values = {region.id: None for region in self.regions}
         for region in self.regions:
             for element_value in self.rating_elements_weighted_values:
-                sum_values[region.id] += self.rating_elements_weighted_values[element_value][region.id]
+                if self.rating_elements_weighted_values[element_value][region.id] is not None:
+                    if sum_values[region.id] is not None:
+                        sum_values[region.id] += float(self.rating_elements_weighted_values[element_value][region.id])
+                    else:
+                        sum_values[region.id] = float(self.rating_elements_weighted_values[element_value][region.id])
         return sum_values
+
+    def get_regions_places(self, sum_values: dict) -> dict:
+        return {k: idx + 1
+                for idx, (k, v)
+                in enumerate(reversed(sorted([v for v in sum_values.items() if v[1] is not None], key=lambda x: x[1])))
+                if v is not None}
 
     def get_max_possible_value(self) -> int:
         max_sum = 0
@@ -242,7 +358,7 @@ class MonthlyRatingExcelGenerator:
         return max_sum
 
     def fill_element_sheet(self, element: MonthlyRatingElement, sheet):
-        sheet.column_dimensions['A'].width = 60
+        sheet.column_dimensions['A'].width = 45
         sheet.column_dimensions['B'].width = 20
         for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
                     'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V']:
@@ -251,8 +367,12 @@ class MonthlyRatingExcelGenerator:
         sheet.column_dimensions['W'].width = 45
         sheet.column_dimensions['X'].width = 25
 
+        row_offset = 1
+
         # Main header
-        cell = sheet.cell(row=1, column=1)
+        sheet.merge_cells('A1:X1')
+        sheet.row_dimensions[1].height = 45
+        cell = sheet.cell(row=row_offset, column=1)
         cell.value = \
             'Исходные данные для расчета комплексного показателя №{number} ' \
             '"{name}"\nрейтинга управ районов САО в части показателей ЖКХ ' \
@@ -266,9 +386,9 @@ class MonthlyRatingExcelGenerator:
         cell.font = table_header_font
         cell.alignment = center_align_wrap
         cell.fill = light_blue_fill
-        sheet.merge_cells('A1:X1')
+        row_offset += 2
 
-        table_headers_cells_1 = [sheet.cell(row=3, column=idx + 1)
+        table_headers_cells_1 = [sheet.cell(row=row_offset, column=idx + 1)
                                  for idx in range(24)]
         table_headers_values_1 = [
             'Наименование\nпоказателей',
@@ -289,8 +409,9 @@ class MonthlyRatingExcelGenerator:
             cell.border = medium_border
             cell.fill = blue_fill
             cell.font = table_header_font
+        row_offset += 1
 
-        table_headers_cells_2 = [sheet.cell(row=4, column=idx + 1)
+        table_headers_cells_2 = [sheet.cell(row=row_offset, column=idx + 1)
                                  for idx in range(24)]
         table_headers_cells_2[0].value = 'Итоговый комплексный показатель'
         table_headers_cells_2[1].value = element.responsible.short_name
@@ -308,24 +429,28 @@ class MonthlyRatingExcelGenerator:
                 max_val = val
             elif max_val is None and val is not None:
                 max_val = val
+            if val is not None:
+                table_headers_cells_2[idx + 2].fill = get_color_fill(val, min_val, max_val, 2)
             table_headers_cells_2[idx + 2].number_format = number_format_2
         table_headers_cells_2[20].value = min_val
+        table_headers_cells_2[20].fill = red_fill
         table_headers_cells_2[21].value = max_val
+        table_headers_cells_2[21].fill = green_fill
 
         for idx, cell in enumerate(table_headers_cells_2):
             cell.alignment = center_align
             cell.border = thin_border
             cell.number_format = number_format_2
+        row_offset += 1
 
-        table_headers_cells_3 = [sheet.cell(row=5, column=idx + 1)
+        table_headers_cells_3 = [sheet.cell(row=row_offset, column=idx + 1)
                                  for idx in range(24)]
         for idx, cell in enumerate(table_headers_cells_3):
             cell.value = idx + 1
             cell.fill = light_gray_fill
             cell.font = table_header_font
             cell.alignment = center_align
-
-        row_offset = 6
+        row_offset += 1
 
         sub_elements = element.related_sub_elements.all()
         for idx, sub_element in enumerate(sub_elements):
@@ -375,6 +500,8 @@ class MonthlyRatingExcelGenerator:
                     cell.fill = light_gray_fill
                 else:
                     cell.value = value.value
+                    if value.value is not None:
+                        cell.fill = get_color_fill(value.value, min_val, max_val, sub_element.best_type)
                 cell.number_format = number_format
                 cell.border = thin_border
                 cell.alignment = center_align
@@ -435,12 +562,14 @@ class MonthlyRatingExcelGenerator:
             cell = sheet.cell(
                 row=idx + row_offset,
                 column=column_offset,
-                value='=HYPERLINK("{}/{}", "Скачать")'.format(
-                    settings.BASE_URL,
-                    sub_element.document
-                ) if sub_element.document else ''
             )
             cell.border = thin_border
             cell.alignment = halign_left_valign_center_wrap
             cell.font = hyperlink_font
+            if sub_element.document:
+                cell.value = '=HYPERLINK("{}/{}", "{}")'.format(
+                    settings.BASE_URL,
+                    sub_element.document,
+                    sub_element.document.name[sub_element.document.name.rfind('/') + 1:]
+                )
             column_offset += 1
