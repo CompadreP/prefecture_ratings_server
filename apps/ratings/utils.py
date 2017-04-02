@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from django.conf import settings
 from openpyxl.styles.colors import BLUE
 
@@ -583,7 +585,7 @@ class MonthlyRatingExcelGenerator:
             if sub_element.document:
                 cell.value = '=HYPERLINK("{}/{}", "{}")'.format(
                     settings.BASE_URL,
-                    sub_element.document,
+                    urlencode(sub_element.document),
                     sub_element.document.name[sub_element.document.name.rfind('/') + 1:]
                 )
             column_offset += 1
