@@ -3,7 +3,6 @@ import datetime
 from typing import List, Dict
 
 from django.db import models
-from django.core.cache import cache
 
 from apps.employees.models import PrefectureEmployee, RatingsUser
 from apps.map.models import Region
@@ -215,7 +214,7 @@ class RatingElement(models.Model):
             else:
                 return True
 
-    def is_active_on_date(self, date) -> bool:
+    def is_active_on_date(self, date: datetime.date) -> bool:
         valid_from = datetime.date(year=self.valid_from_year,
                                    month=self.valid_from_month, day=1)
         if self.valid_to_year and self.valid_to_month:
@@ -281,32 +280,23 @@ class MonthlyRatingElement(models.Model):
                ' , id - {}, номер - {}'.format(self.id, self.number)
 
     @property
-    def values_cache_key(self):
-        return 'element_values_{}'.format(self.id)
-
-    @property
     def values(self) -> Dict:
-        cached = cache.get(self.values_cache_key)
-        if cached:
-            return cached
-        else:
-            regions_ids = Region.objects.values_list('id')
-            regions_dict = {region_id[0]: 0
-                            for region_id
-                            in regions_ids}
-            values_array = []
-            for sub_element in self.related_sub_elements.all():
-                values_array.append(sub_element.get_normalized_values())
-            for sub_element_dict in values_array:
-                for region_id, value in sub_element_dict.items():
-                    regions_dict[region_id] += value
-            values_len = len(values_array)
-            if values_len != 0:
-                for region in regions_dict:
-                    if regions_dict[region] is not None:
-                        regions_dict[region] /= values_len
-            cache.set(self.values_cache_key, regions_dict)
-            return regions_dict
+        regions_ids = Region.objects.values_list('id')
+        regions_dict = {region_id[0]: 0
+                        for region_id
+                        in regions_ids}
+        values_array = []
+        for sub_element in self.related_sub_elements.all():
+            values_array.append(sub_element.get_normalized_values())
+        for sub_element_dict in values_array:
+            for region_id, value in sub_element_dict.items():
+                regions_dict[region_id] += value
+        values_len = len(values_array)
+        if values_len != 0:
+            for region in regions_dict:
+                if regions_dict[region] is not None:
+                    regions_dict[region] /= values_len
+        return regions_dict
 
 
 class MonthlyRatingSubElement(models.Model):
@@ -344,15 +334,11 @@ class MonthlyRatingSubElement(models.Model):
     def __str__(self):
         return self._meta.verbose_name + ' , id - {}'.format(self.id)
 
-    @property
-    def normalized_cache_key(self):
-        return 'subelement_normalized_values_{}'.format(self.id)
-
     def get_min_value(self, lst: List, idx: int) -> float:
         min_value = None
         for value in lst:
-            if value[idx] is not None and \
-                    (min_value is None or value[idx] < min_value):
+            if value[idx] is not None \
+                    and (min_value is None or value[idx] < min_value):
                 min_value = value[idx]
         return min_value
 
@@ -367,7 +353,8 @@ class MonthlyRatingSubElement(models.Model):
     def get_max_value(self, lst: List, idx) -> float:
         max_value = None
         for value in lst:
-            if max_value is None or value[idx] > max_value:
+            if value[idx] is not None \
+                    and (max_value is None or value[idx] > max_value):
                 max_value = value[idx]
         return max_value
 
@@ -403,38 +390,20 @@ class MonthlyRatingSubElement(models.Model):
         return extracted_values
 
     def get_normalized_values(self) -> Dict:  # step 3
-        cached = cache.get(self.normalized_cache_key)
-        if cached:
-            return cached
-        else:
-            extracted_values = self.get_relative_values()
-            min_value = self.get_min_value(extracted_values, 1)
-            max_value = self.get_max_value(extracted_values, 1)
-            for value in extracted_values:
-                if min_value == max_value:
-                    value[1] = 1
-                elif self.best_type == 1:
-                    value[1] = (value[1] - max_value) / (min_value - max_value)
-                elif self.best_type == 2:
-                    value[1] = (value[1] - min_value) / (max_value - min_value)
-            normalized_values = {value[0]: value[1]
-                                 for value
-                                 in extracted_values}
-            cache.set(self.normalized_cache_key, normalized_values)
-            return normalized_values
-
-    def save(self, *args, **kwargs):
-        # TODO check if db query for comparing changing values and best type
-        # can be faster then calculating this on each save
-        super(MonthlyRatingSubElement, self).save(*args, **kwargs)
-        cache.set(self.normalized_cache_key, self.get_normalized_values())
-        # removing parent element cache
-        cache.delete(self.monthly_rating_element.values_cache_key)
-
-    def delete(self, *args, **kwargs):
-        super(MonthlyRatingSubElement, self).delete(*args, **kwargs)
-        cache.delete(self.normalized_cache_key)
-        cache.delete(self.monthly_rating_element.values_cache_key)
+        extracted_values = self.get_relative_values()
+        min_value = self.get_min_value(extracted_values, 1)
+        max_value = self.get_max_value(extracted_values, 1)
+        for value in extracted_values:
+            if min_value == max_value:
+                value[1] = 1
+            elif self.best_type == 1:
+                value[1] = (value[1] - max_value) / (min_value - max_value)
+            elif self.best_type == 2:
+                value[1] = (value[1] - min_value) / (max_value - min_value)
+        normalized_values = {value[0]: value[1]
+                             for value
+                             in extracted_values}
+        return normalized_values
 
 
 class MonthlyRatingSubElementValue(models.Model):

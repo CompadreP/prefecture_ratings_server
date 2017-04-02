@@ -28,4 +28,4 @@ class Region(models.Model):
 
     @property
     def short_name(self):
-        return self.name[:4].upper()
+        return self.name[:3]

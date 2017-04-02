@@ -1,8 +1,10 @@
+import datetime
 from wsgiref.util import FileWrapper
 
 from django.http.response import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
+from openpyxl.writer.excel import save_virtual_workbook
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import list_route, detail_route
@@ -163,16 +165,18 @@ class DownloadRatingAPIView(APIView):
 
     @method_decorator(ensure_csrf_cookie)
     def get(self, *args, **kwargs):
-        rating = MonthlyRating.objects.get(year=kwargs['year'],
-                                           month=kwargs['month'])
-        if not rating.generated_excel:
-            MonthlyRatingExcelGenerator(rating).generate()
-        rating.refresh_from_db()
-        response = HttpResponse(
-            FileWrapper(rating.generated_excel),
-            content_type='application/ms-excel'
+        rating = MonthlyRating.objects.get(
+            year=kwargs['year'],
+            month=kwargs['month']
+        )
+        gen = MonthlyRatingExcelGenerator(rating)
+        response = HttpResponse(save_virtual_workbook(gen.generate()),
+                                content_type='application/vnd.ms-excel')
+        file_name = 'Rating_{}_{}_{}.xlsx'.format(
+            rating.year,
+            rating.month,
+            datetime.datetime.now().strftime("%d.%m.%y_%H:%M")
         )
         response['Content-Disposition'] = \
-            'attachment; filename=Месячный_рейтинг_{}_{}.xlsx.zip'\
-            .format(rating.year, rating.month)
+            'attachment; filename={}'.format(file_name)
         return response
