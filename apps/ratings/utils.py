@@ -1,6 +1,5 @@
 from django.conf import settings
 from openpyxl.styles.colors import BLUE
-from typing import Dict
 
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill, Color
@@ -48,13 +47,15 @@ light_blue_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(221)[2:], hex
 blue_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(94)[2:], hex(156)[2:], hex(211)[2:]))
 light_gray_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(217)[2:], hex(217)[2:], hex(217)[2:]))
 light_green_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(199)[2:], hex(223)[2:], hex(182)[2:]))
-red_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(255)[2:], hex(50)[2:], hex(50)[2:]))
-green_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(50)[2:], hex(255)[2:], hex(50)[2:]))
 
 hex_0 = format(0, '02x')
 hex_60 = format(60, '02x')
 hex_120 = format(120, '02x')
 hex_220 = format(220, '02x')
+hex_255 = format(255, '02x')
+
+red_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex(255)[2:], hex_0, hex_0))
+green_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex_0, hex(255)[2:], hex_0))
 
 
 def get_color_fill(value: float, min_val: float, max_val: float, type: int) -> PatternFill:
@@ -77,17 +78,17 @@ def get_color_fill(value: float, min_val: float, max_val: float, type: int) -> P
                     result = PatternFill(
                         "solid",
                         fgColor='{}{}{}'.format(
-                            format(int(new_val * 2 * 220), '02x'),
+                            format(int(new_val * 2 * 255), '02x'),
                             hex_220,
-                            hex_60)
+                            hex_0)
                     )
                 else:
                     result = PatternFill(
                         "solid",
                         fgColor='{}{}{}'.format(
                             hex_220,
-                            format(int((1 - new_val) * 2 * 220), '02x'),
-                            hex_60)
+                            format(int((1 - new_val) * 2 * 255), '02x'),
+                            hex_0)
                     )
             elif type == 2:
                 if new_val <= 0.5:
@@ -95,16 +96,16 @@ def get_color_fill(value: float, min_val: float, max_val: float, type: int) -> P
                         "solid",
                         fgColor='{}{}{}'.format(
                             hex_220,
-                            format(int(new_val * 2 * 220), '02x'),
-                            hex_60)
+                            format(int(new_val * 2 * 255), '02x'),
+                            hex_0)
                     )
                 else:
                     result = PatternFill(
                         "solid",
                         fgColor='{}{}{}'.format(
-                            format(int((1 - new_val) * 2 * 220), '02x'),
+                            format(int((1 - new_val) * 2 * 255), '02x'),
                             hex_220,
-                            hex_60)
+                            hex_0)
                     )
         return result
 
@@ -144,6 +145,33 @@ class MonthlyRatingExcelGenerator:
                 element_ws = self.wb.create_sheet()
                 element_ws.title = '{}'.format(element.number)
                 self.fill_element_sheet(element, element_ws)
+
+    def get_sum_values(self) -> dict:
+        sum_values = {region.id: None for region in self.regions}
+        for region in self.regions:
+            for element_value in self.rating_elements_weighted_values:
+                if self.rating_elements_weighted_values[element_value][region.id] is not None:
+                    if sum_values[region.id] is not None:
+                        sum_values[region.id] += float(self.rating_elements_weighted_values[element_value][region.id])
+                    else:
+                        sum_values[region.id] = float(self.rating_elements_weighted_values[element_value][region.id])
+        return sum_values
+
+    def get_regions_places(self, sum_values: dict) -> dict:
+        return {k: idx + 1
+                for idx, (k, v)
+                in enumerate(reversed(sorted([v for v in sum_values.items() if v[1] is not None], key=lambda x: x[1])))
+                if v is not None}
+
+    def get_max_possible_value(self) -> int:
+        max_sum = 0
+        for element in self.rating_elements:
+            max_sum += element.rating_element.weight
+        return max_sum
+
+    ###########################################################################
+    # MAIN SHEET
+    ###########################################################################
 
     def fill_main_sheet(self, sheet) -> None:
         sheet.column_dimensions['A'].width = 35
@@ -334,28 +362,9 @@ class MonthlyRatingExcelGenerator:
             cell.border = thin_border
             cell.alignment = center_align_wrap
 
-    def get_sum_values(self) -> dict:
-        sum_values = {region.id: None for region in self.regions}
-        for region in self.regions:
-            for element_value in self.rating_elements_weighted_values:
-                if self.rating_elements_weighted_values[element_value][region.id] is not None:
-                    if sum_values[region.id] is not None:
-                        sum_values[region.id] += float(self.rating_elements_weighted_values[element_value][region.id])
-                    else:
-                        sum_values[region.id] = float(self.rating_elements_weighted_values[element_value][region.id])
-        return sum_values
-
-    def get_regions_places(self, sum_values: dict) -> dict:
-        return {k: idx + 1
-                for idx, (k, v)
-                in enumerate(reversed(sorted([v for v in sum_values.items() if v[1] is not None], key=lambda x: x[1])))
-                if v is not None}
-
-    def get_max_possible_value(self) -> int:
-        max_sum = 0
-        for element in self.rating_elements:
-            max_sum += element.rating_element.weight
-        return max_sum
+    ###########################################################################
+    # ELEMENT SHEET
+    ###########################################################################
 
     def fill_element_sheet(self, element: MonthlyRatingElement, sheet):
         sheet.column_dimensions['A'].width = 45
@@ -429,9 +438,14 @@ class MonthlyRatingExcelGenerator:
                 max_val = val
             elif max_val is None and val is not None:
                 max_val = val
-            if val is not None:
-                table_headers_cells_2[idx + 2].fill = get_color_fill(val, min_val, max_val, 2)
             table_headers_cells_2[idx + 2].number_format = number_format_2
+        for idx, region in enumerate(self.regions):
+            if table_headers_cells_2[idx + 2].value is not None:
+                table_headers_cells_2[idx + 2].fill = get_color_fill(
+                    table_headers_cells_2[idx + 2].value,
+                    min_val, max_val,
+                    2
+                )
         table_headers_cells_2[20].value = min_val
         table_headers_cells_2[20].fill = red_fill
         table_headers_cells_2[21].value = max_val
