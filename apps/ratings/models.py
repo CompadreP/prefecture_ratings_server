@@ -1,11 +1,15 @@
 import datetime
-
 from typing import List, Dict
 
+from django.conf import settings
 from django.db import models
+
+from pymongo import MongoClient
 
 from apps.employees.models import PrefectureEmployee, RatingsUser
 from apps.map.models import Region
+from apps.ratings.serializers import MonthlyRatingDetailSerializer, \
+    MonthlyRatingElementDetailFullSerializer
 from apps.ratings.tasks import send_emails
 
 YEAR_CHOICES = [(r, r) for r in
@@ -111,7 +115,9 @@ class MonthlyRating(models.Model):
     def negotiate(self):
         self.is_negotiated = True
         self.save()
-        emails = [email[0] for email in RatingsUser.objects.filter(is_active=True).values_list('email')]
+        emails = [email[0]
+                  for email
+                  in RatingsUser.objects.filter(is_active=True).values_list('email')]
         send_emails.apply_async(args=(
             emails,
             self.negotiaied_subject.format(
@@ -128,8 +134,29 @@ class MonthlyRating(models.Model):
     def approve(self, user=None):
         # TODO on approve save to mongo fully serialized, generate excel and send emails
         self.is_approved = True
+
+        client = MongoClient(settings.MONGODB['HOST'], settings.MONGODB['PORT'])
+        db = client.ratings
+        mongo_ratings = db.monthly_ratings
+        # creating index if it's not created
+        rating_name = 'monthly_rating'
+        rating_element_name = 'monthly_rating_element'
+        if rating_name not in mongo_ratings.index_information():
+            mongo_ratings.create_index(rating_name, unique=True)
+        if rating_element_name not in mongo_ratings.index_information():
+            mongo_ratings.create_index(rating_element_name, unique=True)
+        mongo_ratings.insert_one(MonthlyRatingDetailSerializer(self))
+        mongo_rating_elements = db.monthly_rating_elements
+        elements = MonthlyRatingElementDetailFullSerializer(
+            self.elements,
+            many=True,
+            context={'options': ['include_sub_elements']},
+        )
+        mongo_rating_elements.insert_many(elements)
         self.save()
-        emails = [email[0] for email in RatingsUser.objects.filter(is_active=True).values_list('email')]
+        emails = [email[0]
+                  for email
+                  in RatingsUser.objects.filter(is_active=True).values_list('email')]
         send_emails.apply_async(args=(
             emails,
             self.approved_subject.format(

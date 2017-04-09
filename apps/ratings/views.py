@@ -1,5 +1,6 @@
 import datetime
 
+from django.conf import settings
 from django.http.response import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
@@ -11,6 +12,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
+
+from pymongo import MongoClient
 
 from apps.common.exceptions import InvalidDocumentEncoding
 from apps.common.permissions import SubElementPermission, \
@@ -33,6 +36,11 @@ class MonthlyRatingsViewSet(GenericViewSet,
     serializer_class = MonthlyRatingDetailSerializer
     permission_classes = (MonthlyRatingPermission,)
 
+    def retrieve(self, request, *args, **kwargs):
+        client = MongoClient(settings.MONGODB['HOST'],
+                             settings.MONGODB['PORT'])
+        return super(MonthlyRatingsViewSet, self).retrieve(request, *args, **kwargs)
+
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -44,14 +52,17 @@ class MonthlyRatingsViewSet(GenericViewSet,
     def change_state(self, request, *args, **kwargs):
         rating = self.get_object()
         if request.data.get('is_negotiated') is True:
-            rating.negotiate()
+            if not rating.is_negotiated:
+                rating.negotiate()
+            else:
+                return Response(data={'detail': 'rating already negotiated'},
+                                status=status.HTTP_400_BAD_REQUEST)
         elif request.data.get('is_approved') is True:
             if rating.is_negotiated is False:
                 return Response(data={'detail': 'wrong rating state'},
                                 status=status.HTTP_400_BAD_REQUEST)
             else:
                 rating.approve()
-
         return Response(status=status.HTTP_200_OK)
 
     @list_route(methods=['get'])
@@ -86,10 +97,9 @@ class MonthlyRatingElementsViewSet(GenericViewSet,
     @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        include_related = request.query_params.get(
-            'include_sub_elements') == 'true'
+        include_related = request.query_params.get('include_sub_elements') == 'true'
 
-        context = {}
+        context = self.get_serializer_context()
         if include_related:
             context['options'] = ['include_sub_elements']
         serializer = MonthlyRatingElementDetailFullSerializer(instance,
