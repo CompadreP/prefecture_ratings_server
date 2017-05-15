@@ -330,7 +330,7 @@ class MonthlyRatingSubElement(models.Model):
 
     class Meta:
         unique_together = ('name', 'date',)
-        ordering = ('id',)
+        ordering = ('name',)
         verbose_name = 'Подкомпонент месячного рейтинга'
         verbose_name_plural = 'Подкомпоненты месячных рейтингов'
 
