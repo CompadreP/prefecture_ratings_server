@@ -1,12 +1,14 @@
 import datetime
+import os
 from typing import List, Dict
 
+from django.conf import settings
 from django.db import models, transaction
 
 from apps.employees.models import PrefectureEmployee, RatingsUser
 from apps.map.models import Region
 from apps.ratings.tasks import send_emails
-
+from apps.ratings.utils import MonthlyRatingExcelGenerator
 
 YEAR_CHOICES = [(r, r) for r in
                 range(2016, datetime.date.today().year + 2)]
@@ -136,6 +138,13 @@ class MonthlyRating(models.Model):
             put_approved_rating_in_json(self)
             for rating_element in self.elements.all():
                 put_approved_rating_element_in_json(rating_element)
+        gen = MonthlyRatingExcelGenerator(self)
+        wb = gen.generate()
+        file_name = 'Rating_{}_{}.xlsx'.format(
+            self.year,
+            self.month
+        )
+        wb.save(os.path.join(settings.PUBLIC_DIR, file_name))
         emails = [email[0]
                   for email
                   in RatingsUser.objects.filter(is_active=True).values_list('email')]

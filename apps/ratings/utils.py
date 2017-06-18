@@ -9,10 +9,6 @@ from openpyxl.styles.colors import BLUE
 from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Side, Font, PatternFill, Color
 
-from apps.map.models import Region
-from apps.ratings.models import MONTHS, MonthlyRating, MonthlyRatingElement
-from apps.ratings.serializers import MonthlyRatingDetailSerializer, \
-    MonthlyRatingElementDetailFullSerializer
 
 center_align = Alignment(horizontal='center', vertical='center')
 halign_left_valign_center_wrap = Alignment(horizontal='left',
@@ -124,7 +120,8 @@ def get_color_fill(value: float, min_val: float, max_val: float, type: int) -> P
 
 
 class MonthlyRatingExcelGenerator:
-    def __init__(self, monthly_rating: MonthlyRating):
+    def __init__(self, monthly_rating):
+        from apps.map.models import Region
         self.monthly_rating = monthly_rating
         self.rating_elements = monthly_rating.elements.all()\
             .prefetch_related('rating_element')\
@@ -151,6 +148,7 @@ class MonthlyRatingExcelGenerator:
         return self.wb
 
     def generate_sheets(self) -> None:
+        from apps.ratings.models import MONTHS
         rating_ws = self.wb.create_sheet(MONTHS[self.monthly_rating.month].lower())
         self.fill_main_sheet(rating_ws)
         for element in self.rating_elements:
@@ -207,6 +205,7 @@ class MonthlyRatingExcelGenerator:
         row_offset += 1
 
         cell = sheet.cell(row=row_offset, column=1)
+        from apps.ratings.models import MONTHS
         cell.value = \
             'Исходные данные для расчета рейтинга управ районов САО ' \
             'в части показателей ЖКХ за {month} {year} года в соответствии с ' \
@@ -379,7 +378,7 @@ class MonthlyRatingExcelGenerator:
     # ELEMENT SHEET
     ###########################################################################
 
-    def fill_element_sheet(self, element: MonthlyRatingElement, sheet):
+    def fill_element_sheet(self, element, sheet):
         sheet.column_dimensions['A'].width = 45
         sheet.column_dimensions['B'].width = 20
         for col in ['C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N',
@@ -395,6 +394,7 @@ class MonthlyRatingExcelGenerator:
         sheet.merge_cells('A1:X1')
         sheet.row_dimensions[1].height = 45
         cell = sheet.cell(row=row_offset, column=1)
+        from apps.ratings.models import MONTHS
         cell.value = \
             'Исходные данные для расчета комплексного показателя №{number} ' \
             '"{name}"\nрейтинга управ районов САО в части показателей ЖКХ ' \
@@ -607,7 +607,7 @@ def invalidate_monthly_rating_caches(monthly_rating_id: int):
     pass
 
 
-def put_approved_rating_in_json(monthly_rating: MonthlyRating, conn=None):
+def put_approved_rating_in_json(monthly_rating, conn=None):
     init_conn = conn
     if conn is None:
         conn = psycopg2.connect(
@@ -618,6 +618,7 @@ def put_approved_rating_in_json(monthly_rating: MonthlyRating, conn=None):
             port=settings.DATABASES['default']['PORT'],
         )
     cur = conn.cursor()
+    from apps.ratings.serializers import MonthlyRatingDetailSerializer
     cur.execute(
         """
         INSERT INTO _ratings_json VALUES (
@@ -634,7 +635,7 @@ def put_approved_rating_in_json(monthly_rating: MonthlyRating, conn=None):
         conn.close()
 
 
-def put_approved_rating_element_in_json(monthly_rating_element: MonthlyRatingElement, conn=None):
+def put_approved_rating_element_in_json(monthly_rating_element, conn=None):
     init_conn = conn
     if conn is None:
         conn = psycopg2.connect(
@@ -645,6 +646,8 @@ def put_approved_rating_element_in_json(monthly_rating_element: MonthlyRatingEle
             port=settings.DATABASES['default']['PORT'],
         )
     cur = conn.cursor()
+    from apps.ratings.serializers import \
+        MonthlyRatingElementDetailFullSerializer
     cur.execute(
         """
         INSERT INTO _ratings_elements_json VALUES (
