@@ -1,10 +1,12 @@
 import datetime
+import os
 
 from django.conf import settings
 from django.http.response import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect, ensure_csrf_cookie
 from openpyxl.writer.excel import save_virtual_workbook
+from django.core.files import File
 from rest_framework import mixins
 from rest_framework import status
 from rest_framework.decorators import list_route, detail_route
@@ -183,14 +185,26 @@ class DownloadRatingAPIView(APIView):
             year=kwargs['year'],
             month=kwargs['month']
         )
-        gen = MonthlyRatingExcelGenerator(rating)
-        response = HttpResponse(save_virtual_workbook(gen.generate()),
-                                content_type='application/vnd.ms-excel')
-        file_name = 'Rating_{}_{}_{}.xlsx'.format(
-            rating.year,
-            rating.month,
-            datetime.datetime.now().strftime("%d.%m.%y_%H:%M")
-        )
-        response['Content-Disposition'] = \
-            'attachment; filename={}'.format(file_name)
-        return response
+        if rating.is_approved:
+            file_name = 'Rating_{}_{}.xlsx'.format(
+                rating.year,
+                rating.month
+            )
+            file = open(os.path.join(settings.PUBLIC_DIR, file_name), 'rb')
+            response = HttpResponse(File(file),
+                                    content_type='application/vnd.ms-excel')
+            response['Content-Disposition'] = \
+                'attachment; filename={}'.format(file_name)
+            return response
+        else:
+            gen = MonthlyRatingExcelGenerator(rating)
+            response = HttpResponse(save_virtual_workbook(gen.generate()),
+                                    content_type='application/vnd.ms-excel')
+            file_name = 'Rating_{}_{}_{}.xlsx'.format(
+                rating.year,
+                rating.month,
+                datetime.datetime.now().strftime("%d.%m.%y_%H:%M")
+            )
+            response['Content-Disposition'] = \
+                'attachment; filename={}'.format(file_name)
+            return response

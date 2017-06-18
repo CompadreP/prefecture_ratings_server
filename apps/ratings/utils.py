@@ -1,6 +1,7 @@
 from urllib.parse import quote_plus
 
 import psycopg2
+from decimal import Decimal
 from django.conf import settings
 import simplejson as json
 from openpyxl.styles.colors import BLUE
@@ -65,6 +66,12 @@ green_fill = PatternFill("solid", fgColor='{}{}{}'.format(hex_0, hex(255)[2:], h
 
 
 def get_color_fill(value: float, min_val: float, max_val: float, type: int) -> PatternFill:
+    if isinstance(max_val, Decimal):
+        max_val = float(max_val)
+    if isinstance(min_val, Decimal):
+        min_val = float(min_val)
+    if isinstance(value, Decimal):
+        value = float(value)
     if value is not None:
         result = None
         if min_val == max_val:
