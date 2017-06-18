@@ -1,6 +1,8 @@
 from urllib.parse import quote_plus
 
+import psycopg2
 from django.conf import settings
+import simplejson as json
 from openpyxl.styles.colors import BLUE
 
 from openpyxl import Workbook
@@ -8,6 +10,8 @@ from openpyxl.styles import Alignment, Border, Side, Font, PatternFill, Color
 
 from apps.map.models import Region
 from apps.ratings.models import MONTHS, MonthlyRating, MonthlyRatingElement
+from apps.ratings.serializers import MonthlyRatingDetailSerializer, \
+    MonthlyRatingElementDetailFullSerializer
 
 center_align = Alignment(horizontal='center', vertical='center')
 halign_left_valign_center_wrap = Alignment(horizontal='left',
@@ -594,3 +598,114 @@ class MonthlyRatingExcelGenerator:
 
 def invalidate_monthly_rating_caches(monthly_rating_id: int):
     pass
+
+
+def put_approved_rating_in_json(monthly_rating: MonthlyRating, conn=None):
+    init_conn = conn
+    if conn is None:
+        conn = psycopg2.connect(
+            database=settings.DATABASES['default']['NAME'],
+            user=settings.DATABASES['default']['USER'],
+            password=settings.DATABASES['default']['PASSWORD'],
+            host=settings.DATABASES['default']['HOST'],
+            port=settings.DATABASES['default']['PORT'],
+        )
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO _ratings_json VALUES (
+          {},
+          '{}'
+        )
+        """.format(
+            monthly_rating.id,
+            json.dumps(MonthlyRatingDetailSerializer(monthly_rating).data)
+        )
+    )
+    conn.commit()
+    if init_conn is None:
+        conn.close()
+
+
+def put_approved_rating_element_in_json(monthly_rating_element: MonthlyRatingElement, conn=None):
+    init_conn = conn
+    if conn is None:
+        conn = psycopg2.connect(
+            database=settings.DATABASES['default']['NAME'],
+            user=settings.DATABASES['default']['USER'],
+            password=settings.DATABASES['default']['PASSWORD'],
+            host=settings.DATABASES['default']['HOST'],
+            port=settings.DATABASES['default']['PORT'],
+        )
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO _ratings_elements_json VALUES (
+          {},
+          '{}'
+        )
+        """.format(
+            monthly_rating_element.id,
+            json.dumps(
+                MonthlyRatingElementDetailFullSerializer(
+                    monthly_rating_element,
+                    context={
+                        'options': {
+                            'include_sub_elements': True
+                        }
+                    }
+                ).data
+            )
+        )
+    )
+    conn.commit()
+    if init_conn is None:
+        conn.close()
+
+
+def get_approved_rating_in_json(rating_id: int):
+    if not isinstance(rating_id, int):
+        raise ValueError("rating_id must be int")
+    conn = psycopg2.connect(
+        database=settings.DATABASES['default']['NAME'],
+        user=settings.DATABASES['default']['USER'],
+        password=settings.DATABASES['default']['PASSWORD'],
+        host=settings.DATABASES['default']['HOST'],
+        port=settings.DATABASES['default']['PORT'],
+    )
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT "data" 
+        FROM _ratings_json 
+        WHERE "id" = {}
+        """.format(rating_id)
+    )
+    data = cur.fetchone()
+    conn.close()
+    if data:
+        return data[0]
+
+
+def get_approved_rating_element_in_json(rating_element_id: int):
+    if not isinstance(rating_element_id, int):
+        raise ValueError("rating_element_id must be int")
+    conn = psycopg2.connect(
+        database=settings.DATABASES['default']['NAME'],
+        user=settings.DATABASES['default']['USER'],
+        password=settings.DATABASES['default']['PASSWORD'],
+        host=settings.DATABASES['default']['HOST'],
+        port=settings.DATABASES['default']['PORT'],
+    )
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT "data" 
+        FROM _ratings_elements_json 
+        WHERE "id" = {}
+        """.format(rating_element_id)
+    )
+    data = cur.fetchone()
+    conn.close()
+    if data:
+        return data[0]

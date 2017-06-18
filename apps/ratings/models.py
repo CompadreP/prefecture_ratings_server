@@ -1,16 +1,12 @@
 import datetime
 from typing import List, Dict
 
-from django.conf import settings
-from django.db import models
-
-from pymongo import MongoClient
+from django.db import models, transaction
 
 from apps.employees.models import PrefectureEmployee, RatingsUser
 from apps.map.models import Region
-from apps.ratings.serializers import MonthlyRatingDetailSerializer, \
-    MonthlyRatingElementDetailFullSerializer
 from apps.ratings.tasks import send_emails
+
 
 YEAR_CHOICES = [(r, r) for r in
                 range(2016, datetime.date.today().year + 2)]
@@ -124,7 +120,7 @@ class MonthlyRating(models.Model):
                 month=self.month,
                 year=self.year
             ),
-            self.negotiaied_body.format(self.id)
+            self.negotiaied_body.format(id=self.id)
         ))
 
     approved_subject = 'Рейтинг районов за {month} {year} года утвержден.'
@@ -132,28 +128,14 @@ class MonthlyRating(models.Model):
                     '\n https://prefecture-ratings.ru/rating/{id}'
 
     def approve(self, user=None):
-        # TODO on approve save to mongo fully serialized, generate excel and send emails
-        self.is_approved = True
-
-        client = MongoClient(settings.MONGODB['HOST'], settings.MONGODB['PORT'])
-        db = client.ratings
-        mongo_ratings = db.monthly_ratings
-        # creating index if it's not created
-        rating_name = 'monthly_rating'
-        rating_element_name = 'monthly_rating_element'
-        if rating_name not in mongo_ratings.index_information():
-            mongo_ratings.create_index(rating_name, unique=True)
-        if rating_element_name not in mongo_ratings.index_information():
-            mongo_ratings.create_index(rating_element_name, unique=True)
-        mongo_ratings.insert_one(MonthlyRatingDetailSerializer(self))
-        mongo_rating_elements = db.monthly_rating_elements
-        elements = MonthlyRatingElementDetailFullSerializer(
-            self.elements,
-            many=True,
-            context={'options': ['include_sub_elements']},
-        )
-        mongo_rating_elements.insert_many(elements)
-        self.save()
+        with transaction.atomic():
+            self.is_approved = True
+            self.save()
+            from apps.ratings.utils import put_approved_rating_in_json, \
+                put_approved_rating_element_in_json
+            put_approved_rating_in_json(self)
+            for rating_element in self.elements.all():
+                put_approved_rating_element_in_json(rating_element)
         emails = [email[0]
                   for email
                   in RatingsUser.objects.filter(is_active=True).values_list('email')]
@@ -163,7 +145,7 @@ class MonthlyRating(models.Model):
                 month=self.month,
                 year=self.year
             ),
-            self.approved_body.format(self.id)
+            self.approved_body.format(id=self.id)
         ))
 
 

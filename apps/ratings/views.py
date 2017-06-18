@@ -13,8 +13,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet
 
-from pymongo import MongoClient
-
 from apps.common.exceptions import InvalidDocumentEncoding
 from apps.common.permissions import SubElementPermission, \
     MonthlyRatingElementPermission, MonthlyRatingPermission
@@ -26,7 +24,8 @@ from apps.ratings.serializers import MonthlyRatingListSerializer, \
     MonthlyRatingElementSimpleSerializer, \
     MonthlyRatingSubElementRetrieveSerializer, \
     MonthlyRatingSubElementChangeSerializer
-from apps.ratings.utils import MonthlyRatingExcelGenerator
+from apps.ratings.utils import MonthlyRatingExcelGenerator, \
+    get_approved_rating_in_json, get_approved_rating_element_in_json
 
 
 class MonthlyRatingsViewSet(GenericViewSet,
@@ -37,9 +36,11 @@ class MonthlyRatingsViewSet(GenericViewSet,
     permission_classes = (MonthlyRatingPermission,)
 
     def retrieve(self, request, *args, **kwargs):
-        client = MongoClient(settings.MONGODB['HOST'],
-                             settings.MONGODB['PORT'])
-        return super(MonthlyRatingsViewSet, self).retrieve(request, *args, **kwargs)
+        instance = self.get_object()
+        if instance.is_approved:
+            return Response(data=get_approved_rating_in_json(instance.id))
+        else:
+            return super(MonthlyRatingsViewSet, self).retrieve(request, *args, **kwargs)
 
     @method_decorator(ensure_csrf_cookie)
     def list(self, request, *args, **kwargs):
@@ -97,14 +98,17 @@ class MonthlyRatingElementsViewSet(GenericViewSet,
     @method_decorator(ensure_csrf_cookie)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
-        include_related = request.query_params.get('include_sub_elements') == 'true'
+        if instance.monthly_rating.is_approved:
+            return Response(data=get_approved_rating_element_in_json(instance.id))
+        else:
+            include_related = request.query_params.get('include_sub_elements') == 'true'
 
-        context = self.get_serializer_context()
-        if include_related:
-            context['options'] = ['include_sub_elements']
-        serializer = MonthlyRatingElementDetailFullSerializer(instance,
-                                                              context=context)
-        return Response(serializer.data)
+            context = self.get_serializer_context()
+            if include_related:
+                context['options'] = ['include_sub_elements']
+            serializer = MonthlyRatingElementDetailFullSerializer(instance,
+                                                                  context=context)
+            return Response(serializer.data)
 
     @detail_route(methods=['get'])
     @method_decorator(ensure_csrf_cookie)
