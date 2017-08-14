@@ -436,7 +436,12 @@ class MonthlyRatingExcelGenerator:
         table_headers_cells_2 = [sheet.cell(row=row_offset, column=idx + 1)
                                  for idx in range(24)]
         table_headers_cells_2[0].value = 'Итоговый комплексный показатель'
-        table_headers_cells_2[1].value = element.responsible.short_name
+        resp = element.responsible
+        if resp is None:
+            short_name = '-'
+        else:
+            short_name = resp.short_name
+        table_headers_cells_2[1].value = short_name
 
         min_val = None
         max_val = None
