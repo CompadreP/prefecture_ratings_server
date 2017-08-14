@@ -511,10 +511,15 @@ class MonthlyRatingExcelGenerator:
             cell.fill = light_blue_fill
             column_offset += 1
 
+            resp = sub_element.responsible
+            if resp is None:
+                name = '-'
+            else:
+                name = resp.short_name
             cell = sheet.cell(
                 row=idx + row_offset,
                 column=column_offset,
-                value=sub_element.responsible.short_name
+                value=name
             )
             cell.border = thin_border
             cell.alignment = center_align
